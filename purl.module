@@ -130,6 +130,8 @@ if (!function_exists('custom_url_rewrite_outbound')) {
  * Rewrites path with the current modifier and removes the modifier if searching for source path.
  */
 function purl_url_rewrite(&$path, &$options, $original) {
+  static $global_modifiers;
+
   $working_path = $path; // preserve original path
 
   /**
@@ -144,34 +146,35 @@ function purl_url_rewrite(&$path, &$options, $original) {
    *
    */
 
-  // Check to see whether url rewriting has been disabled.
-  if (empty($options['purl']['disabled']) || !purl_disable()) {
-    $args = 
-    $active_path_values = array();
+  // Check to see whether url rewriting has been disabled or isn't
+  // suitable for this path.
+  if (empty($options['purl']['disabled']) && !purl_disable() && !$options['alias'] && !strpos($path, '://')) {
+    $modifiers =
+    $args = array();
 
     // The current url has requested a specific PURL modifier use it only
     if (!empty($options['purl']['provider']) && !empty($options['purl']['id'])) {
       $method = variable_get('purl_method_'. $options['purl']['provider'], PURL_PATH);
-      $modifiers = purl_modifiers($method);
+      $local_modifiers = purl_modifiers($method);
       switch ($method) {
         case PURL_PATH:
-          foreach ($modifiers as $key => $modifier) {
+          foreach ($local_modifiers as $key => $modifier) {
             if ($modifier['id'] == $options['purl']['id'] && $modifier['provider'] == $options['purl']['provider']) {
-              $active_path_values[] = $key;
+              $modifiers[] = $key;
               break;
             }
           }
           break;
         case PURL_PAIR:
           // @TODO: this ($values[0]) is really sketchy -- does it work?
-          $modifiers = array_keys($modifiers);
-          $active_path_values[] = "{$modifiers[0]}/{$options['purl']['id']}";
+          $local_modifiers = array_keys($local_modifiers);
+          $modifiers[] = "{$modifiers[0]}/{$options['purl']['id']}";
           break;
         case PURL_DOMAIN:
-          foreach ($modifiers as $key => $info) {
+          foreach ($local_modifiers as $key => $info) {
             if ($modifier['id'] == $options['purl']['id'] && $modifier['provider'] == $options['purl']['provider']) {
               $options['absolute'] = TRUE;
-              $active_path_values = array();
+              $modifiers = array();
               $path = "http://{$key}/{$path}";
               break;
             }
@@ -180,21 +183,25 @@ function purl_url_rewrite(&$path, &$options, $original) {
       }
     }
     else {
-      // Retrieve the path values for the current page that were
-      // "stripped out" and write them back into url paths.
-      foreach (purl_get(PURL_PAIR) as $modifier) {
-        $active_path_values[] = "{$modifier['value']}/{$modifier['id']}";
+      if (!isset($global_modifiers)) {
+        $global_modifiers = array();
+        // Retrieve the path values for the current page that were
+        // "stripped out" and write them back into url paths.
+        foreach (purl_get(PURL_PAIR) as $modifier) {
+          $global_modifiers[] = "{$modifier['value']}/{$modifier['id']}";
+        }
+        foreach (purl_get(PURL_PATH) as $modifier) {
+          $global_modifiers[] = $modifier['value'];
+        }
       }
-      foreach (purl_get(PURL_PATH) as $modifier) {
-        $active_path_values[] = $modifier['value'];
-      }
+      $modifiers = $global_modifiers;
     }
 
-    if (count($active_path_values)) {
+    if (count($modifiers)) {
+      // Ensure that we aren't modifying a path that has already been altered
       $parsed = purl_parse(PURL_PATH, $working_path) + purl_parse(PURL_PAIR, $working_path);
-      // A "normal" url was requested -- value the path
-      if (!$options['alias'] && !strpos($path, '://') && !count($parsed) && count($active_path_values)) {
-        $args = $args + $active_path_values;
+      if (!count($parsed)) {
+        $args = $args + $modifiers;
       }
     }
 
@@ -205,16 +212,15 @@ function purl_url_rewrite(&$path, &$options, $original) {
     $path = is_array($args) ? implode('/', $args) : '';
   }
   else {
-    // Handle domains -- need to force domain onto the path and push through as absolute url
-    $options['absolute'] = TRUE;
-    if ($path == '<front>') {
-      $path = variable_get('site_frontpage', 'node');
-    }
-    if ($domain = variable_get('purl_base_domain', '')) {
-      $path = $domain .'/'. $path; // REPLACE BASE_URL with the hub domain.
-    }  
+    // @TODO: base domain handling ... this is currently broken.
+    // $options['absolute'] = TRUE;
+    // if ($path == '<front>') {
+    //   $path = variable_get('site_frontpage', 'node');
+    // }
+    // if ($domain = variable_get('purl_base_domain', '')) {
+    //   $path = $domain .'/'. $path; // REPLACE BASE_URL with the hub domain.
+    // }
   }
-
 }
 
 /**
