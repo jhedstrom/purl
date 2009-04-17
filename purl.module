@@ -5,6 +5,7 @@ define('PURL_PATH', 'path');
 define('PURL_SUBDOMAIN', 'subdomain');
 define('PURL_DOMAIN', 'domain');
 define('PURL_PAIR', 'pair');
+define('PURL_EXTENSION', 'extension');
 
 /**
  * Implementation of hook_theme().
@@ -28,6 +29,7 @@ function purl_menu() {
     'description' => t('Settings for persistent url.'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('purl_settings_form'),
+    'file' => 'purl.admin.inc',
     'access callback' => 'user_access',
     'access arguments' => array('administer site configuration'),
     'weight' => 10,
@@ -37,6 +39,7 @@ function purl_menu() {
     'title' => t('Settings'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('purl_settings_form'),
+    'file' => 'purl.admin.inc',
     'access callback' => 'user_access',
     'access arguments' => array('administer site configuration'),
     'weight' => 0,
@@ -45,9 +48,20 @@ function purl_menu() {
     'type' => MENU_LOCAL_TASK,
     'title' => t('Modifiers'),
     'page callback' => 'purl_admin',
+    'file' => 'purl.admin.inc',
     'access callback' => 'user_access',
     'access arguments' => array('administer site configuration'),
-    'weight' => 10,
+    'weight' => 5,
+  );
+  $items['admin/settings/purl/types'] = array(
+    'type' => MENU_LOCAL_TASK,
+    'title' => t('Types'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('purl_types_form'),
+    'file' => 'purl.admin.inc',
+    'access callback' => 'user_access',
+    'access arguments' => array('administer site configuration'),
+    'weight' => 11,
   );
   return $items;
 }
@@ -59,56 +73,41 @@ function purl_menu() {
 function purl_init() {
   static $once;
   if (!$once) {
-    _purl_init(PURL_PATH);
-    _purl_init(PURL_DOMAIN);
-    _purl_init(PURL_PAIR);
+    // Initialize a few things so that we can use them without warnings.
+    if (!isset($_GET['q'])) {
+      $_GET['q'] = '';
+    }
+    if (!isset($_REQUEST['q'])) {
+      $_REQUEST['q'] = '';
+    }
+
+    foreach(_purl_options() as $k => $v) {
+      _purl_init($k);
+    }
     $once = true;
   }
 }
 
 /**
  * Helper function to initialize.
+ *
+ * @param $method
+ *   A string identifier of a purl type/method
  */
-function _purl_init($method = PURL_PATH) {
-  switch ($method) {
-    case PURL_PATH:
-    case PURL_PAIR:
-      $q = isset($_REQUEST["q"]) ? trim($_REQUEST["q"], "/") : '';
-      break;
-    case PURL_DOMAIN:
-      $host = $_SERVER['HTTP_HOST'];
-      // We handle sub.domain.com, and nothing more (no sub1.sub2.domain.com).
-      $q = str_replace('http://','',$host);
-      break;
-  }
-  
-  $parsed = purl_parse($method, $q);
-  
-  // Initialize a few things so that we can use them without warnings.
-  if (!isset($_GET['q'])) {
-    $_GET['q'] = '';
-  }
-  if (!isset($_REQUEST['q'])) {
-    $_REQUEST['q'] = '';
-  }
-  
-  // if $_GET and $_REQUEST are different, the path has NOT been
-  // aliased. We may need to rewrite the path.
-  if (in_array($method, array(PURL_PATH, PURL_PAIR)) && ($_GET['q'] == trim($_REQUEST['q'], '/'))) {
-    $q = purl_remove_modifiers($q, $method);
-    // there is nothing beyond the path value -- treat as frontpage
-    if ($q == '') {
-      $_GET['q'] = variable_get('site_frontpage', 'node');
-    }
-    // pass the rest of the path onto Drupal cleanly
-    else {
-      $_REQUEST['q'] = $_GET['q'] = _purl_get_normal_path($q);
-    }
-  }
-  
+function _purl_init($method) {
+  $processor = purl_get_processor($method);
+  $value = $processor->detect();
+
+  // Parse and cache.
+  $parsed = purl_parse($processor, $value);
+
   if (is_array($parsed)) {
-    foreach ($parsed as $value => $info) {
-      purl_set($method, $value, $info);
+    foreach ($parsed as $element) {
+      // Let active modifiers do thier thing.
+      purl_set($method, $element);
+
+      // Allow adjustment of page request globals.
+      $processor->adjust($value, $element);
     }
   }
 }
@@ -124,109 +123,102 @@ if (!function_exists('custom_url_rewrite_outbound')) {
 }
 
 /**
- * Rewrites path with the current modifier and removes the modifier if searching for source path.
+ * Taken from i18n
+ */
+function _purl_get_normal_path($path) {
+  // If bootstrap, drupal_lookup_path is not defined
+  if (!function_exists('drupal_get_headers')) {
+    return $path;
+  }
+  // Check alias without lang
+  elseif ($alias = drupal_lookup_path('source', $path)) {
+    return $alias;
+  }
+  else {
+    return $path;
+  }
+}
+
+/**
+ * Rewrites path with the current modifier and removes the modifier if
+ * searching for source path.
+ *
+ * purl extends the $options array in three ways:
+ *
+ * #1 If $options['purl']['disabled'] is true none of the detected and
+ *    removed path modifications will be re-instated. This allows you to
+ *    drop all purl modifications
+ *
+ * #2 $options['purl']['remove'] can be set to an array of providers which
+ *    Should be dropped, while others are maintained. Setting this when
+ *    $options['purl']['disabled'] is true is redundant.
+ *
+ * #3 $options['purl']['provider'] and $options['purl']['id'] can be used
+ *    together to add a specific modification to the link.
+ *
  */
 function purl_url_rewrite(&$path, &$options, $original) {
-  static $global_modifiers;
-
-  $working_path = $path; // preserve original path
-
-  /**
-   * TODO: we need to abstract this base_url dissection into a
-   * handler, and in there, we'll abstract out for
-   * protocol handling, and handling the site's base_url like www.
-   *
-   * TODO: we need to make sure that other valued contexts don't
-   * get dropped. e.g. if you are on 'en/node/43' and you
-   * purl_goto('spaces', 'mygroup'), you should end up
-   * at 'en/mygroup', not 'mygroup'
-   *
-   */
+  static $global_elements;
 
   // Check to see whether url rewriting has been disabled or isn't
   // suitable for this path.
-  if (empty($options['purl']['disabled']) && !purl_disable() && !$options['alias'] && !strpos($path, '://')) {
-    $modifiers =
-    $args = array();
+  if (!purl_disable() && !$options['alias'] && !strpos($path, '://')) {
+    $elements = array();
 
-    // The current url has requested a specific PURL modifier use it only
+    if (!isset($global_elements)) {
+      $global_elements = array();
+      // Retrieve the path values for the current page that were
+      // "stripped out" and write them back into url paths.
+      foreach (purl_get() as $method => $items) {
+        // Array_pop instead of iterating to preseve order.
+        while ($item = array_pop($items)) {
+          $global_elements[] = $item;
+        }
+      }
+    }
+    $elements = $global_elements;
+
+    // The current url has requested a specific PURL modifier add it.
     if (!empty($options['purl']['provider']) && !empty($options['purl']['id'])) {
       $method = variable_get('purl_method_'. $options['purl']['provider'], PURL_PATH);
+
+      $processor = purl_get_processor($method);
       $local_modifiers = purl_modifiers($method);
-      switch ($method) {
-        case PURL_PATH:
-          foreach ($local_modifiers as $key => $modifier) {
-            if ($modifier['id'] == $options['purl']['id'] && $modifier['provider'] == $options['purl']['provider']) {
-              $modifiers[] = $key;
-              break;
-            }
+
+      foreach ($local_modifiers as $k => $v) {
+        if ($v['provider'] == $options['purl']['provider']) {
+          // If an id is NULL it simply indicates that the method doesn't need
+          // to cache them, for example PURL_PAIR.
+          if ($v['id'] === null) {
+            $v['id'] = $options['purl']['id'];
+            break;
           }
-          break;
-        case PURL_PAIR:
-          // @TODO: this ($values[0]) is really sketchy -- does it work?
-          $local_modifiers = array_keys($local_modifiers);
-          $modifiers[] = "{$modifiers[0]}/{$options['purl']['id']}";
-          break;
-        case PURL_DOMAIN:
-          foreach ($local_modifiers as $key => $info) {
-            if ($modifier['id'] == $options['purl']['id'] && $modifier['provider'] == $options['purl']['provider']) {
-              $options['absolute'] = TRUE;
-              $modifiers = array();
-              $path = "http://{$key}/{$path}";
-              break;
-            }
+          elseif ($v['id'] == $options['purl']['id']) {
+            break;
           }
-          break;
-      }
-    }
-    else {
-      if (!isset($global_modifiers)) {
-        $global_modifiers = array();
-        // Retrieve the path values for the current page that were
-        // "stripped out" and write them back into url paths.
-        foreach (purl_get(PURL_PAIR) as $modifier) {
-          $global_modifiers[] = "{$modifier['value']}/{$modifier['id']}";
-        }
-        foreach (purl_get(PURL_PATH) as $modifier) {
-          $global_modifiers[] = $modifier['value'];
         }
       }
-      $modifiers = $global_modifiers;
-    }
-
-    if (count($modifiers)) {
-      // Ensure that we aren't modifying a path that has already been altered
-      $parsed = purl_parse(PURL_PATH, $working_path) + purl_parse(PURL_PAIR, $working_path);
-      if (!count($parsed)) {
-        $args = $args + $modifiers;
+      // Ensure we replace any global ids for this provider.
+      foreach ($elements as $i => $e) {
+        if ($e->provider == $v['provider']) {
+          unset($elements[$i]);
+        }
       }
+      $elements[] = new purl_path_element($processor, $k, $v['provider'], $v['id']);
     }
-
-    if (!empty($working_path)) {
-      $args[] = $working_path;
+    foreach ($elements as $e) {
+      $e->processor->rewrite($path, $options, $e);
     }
-
-    $path = is_array($args) ? implode('/', $args) : '';
-  }
-  else {
-    // @TODO: base domain handling ... this is currently broken.
-    // $options['absolute'] = TRUE;
-    // if ($path == '<front>') {
-    //   $path = variable_get('site_frontpage', 'node');
-    // }
-    // if ($domain = variable_get('purl_base_domain', '')) {
-    //   $path = $domain .'/'. $path; // REPLACE BASE_URL with the hub domain.
-    // }
   }
 }
 
 /**
  * Queries the database & modules for valid values based on modifing method.
  *
- * Modules that wish to provide in-code values should implement the 
+ * Modules that wish to provide in-code values should implement the
  * hook_purl_modifiers(). Which should return an array of values by
- * by provider. 
- * 
+ * by provider.
+ *
  * For example:
  *
  *  return array(
@@ -235,8 +227,15 @@ function purl_url_rewrite(&$path, &$options, $original) {
  *      array('value' => 'bar', 'id' => 2),
  *    ),
  *  );
+ *
+ * TODO Figure out a way not to check explicitly for PURL_PAIR as the method.
+ *
+ * @param $requested_method
+ *   A string identifier of a purl type/method
+ * @return
+ *   Array of modifiers
  */
-function purl_modifiers($requested_method = PURL_PATH) {
+function purl_modifiers($requested_method) {
   static $values;
   if (!isset($values)) {
     $values = array();
@@ -306,91 +305,37 @@ function purl_modifiers($requested_method = PURL_PATH) {
  * Parses a query string of various types (url, domain, etc.) and
  * returns an array of any found values and their respective
  * providers/id values.
+ *
+ * @param $processor
+ *   Object that implements purl_processor
+ * @param $q
+ *   The value being parsed.
+ * @return
+ *   The contents of the cache.
  */
-function purl_parse($method = PURL_PATH, $q) {
+function purl_parse($processor, $q) {
   static $cache;
   if (!isset($cache)) {
     $cache = new purl_cache();
   }
-  if ($cache->get($method, $q) === false) {
-    $valid_values = purl_modifiers($method);
-
-    // Parse the provided query string and provide an array of any values found
-    switch ($method) {
-      case PURL_PATH:
-      case PURL_PAIR:      
-        $parsed = array();
-        $args = explode('/', $q);
-        $arg = $args[0];
-        while (isset($valid_values[$arg])) {
-          $parsed[$arg] = $valid_values[$arg];
-          array_shift($args);
-          if ($method == PURL_PAIR) {
-            $parsed[$arg]['id'] = array_shift($args);
-          }
-
-          $arg = $args[0];
-          if (in_array($arg, $parsed)) {
-            break;
-          }
-        }
-        $cache->add($method, array($q => $parsed));
-        break;
-      case PURL_DOMAIN:
-        $parsed = array();
-        if (isset($valid_values[$q])) {
-          $parsed[$q] = $valid_values[$q];
-        }
-        $cache->add($method, array($q => $parsed));
-        break;
-    }
+  if ($cache->get($processor->method(), $q) === false) {
+    $valid_values = purl_modifiers($processor->method());
+    $item = $processor->parse($valid_values, $q);
+    $cache->add($processor->method(), array($q => $item));
   }
-  return $cache->get($method, $q);
-}
-
-/**
- * Removes any modifiers from a query string. For path values only.
- */
-function purl_remove_modifiers($q, $method, $providers = array()) {
-  $parsed = purl_parse($method, $q);
-  if (is_array($providers) && count($providers)) {
-    foreach ($parsed as $value => $info) {
-      if (!in_array($info['provider'], $providers)) {
-        unset($parsed[$value]);
-      }
-    }
-  }
-  $parsed = array_keys($parsed);
-  $args = explode('/', $q);
-  switch ($method) {
-    case PURL_PATH:
-      // Remove the first occurrence of each value value from the query string
-      foreach ($parsed as $value) {
-        $k = array_search($value, $args);
-        if ($k !== FALSE) {
-          unset($args[$k]);
-        }
-      }
-      break;
-    case PURL_PAIR:
-      foreach ($parsed as $v) {
-        array_splice($args, array_search($v, $args), 2);
-      }
-      break;
-  }
-  return implode('/', $args);
+  return $cache->get($processor->method(), $q);
 }
 
 /**
  * Invokes hook_purl_provider() to gather all providers.
  *
  * Modules that implement hook_purl_provider need to return an
- * array of value definitions. Each definition should have the following 
+ * array of value definitions. Each definition should have the following
  * keys:
  *  - name
  *  - description
  *  - callback
- *  - example 
+ *  - example
  *
  * See the spaces module for an usage example.
  */
@@ -417,27 +362,17 @@ function purl_providers($by_method = FALSE) {
 }
 
 /**
- * Taken from i18n
- */
-function _purl_get_normal_path($path) {
-  // If bootstrap, drupal_lookup_path is not defined
-  if (!function_exists('drupal_get_headers')) {
-    return $path;
-  }
-  // Check alias without lang
-  elseif ($alias = drupal_lookup_path('source', $path)) {
-    return $alias;
-  }
-  else {
-    return $path;
-  }
-}
-
-/**
  * Static cache function for setting + storing any valued modifiers
  * that are present on this page's request.
+ *
+ * @param $op
+ *   'set' or 'get'
+ * @param $type
+ *   A string identifier of a purl type/method
+ * @param $e
+ *   purl_path_element, required for setting.
  */
-function _purl_set($op = 'set', $type = PURL_PATH, $value = '', $info = array()) {
+function _purl_set($op = 'set', $type, $e = null) {
   static $used;
   if (!$used) {
     $used = new purl_cache();
@@ -445,16 +380,18 @@ function _purl_set($op = 'set', $type = PURL_PATH, $value = '', $info = array())
   switch ($op) {
     case 'set':
       // Store value for url rewriting later on in the stack
-      $info['value'] = $value;
-      $used->add($type, $info, false);
-      
+      $used->add($type, $e, false);
+
       // Fire the provider callback
-      if ($info['provider'] && $info['id']) {
+      if ($e->provider && $e->id) {
         $providers = purl_providers();
-        $callback = $providers[$info['provider']]['callback'];
-        $args = isset($providers[$info['provider']]['callback arguments']) ? $providers[$info['provider']]['callback arguments'] : array();
-        $args[] = $info['id'];
+        $callback = $providers[$e->provider]['callback'];
         if (function_exists($callback)) {
+          $args = array();
+          if (isset($providers[$e->provider]['callback arguments'])) {
+            $args = $providers[$e->provider]['callback arguments'];
+          }
+          $args[] = $e->id;
           call_user_func_array($callback, $args);
         }
       }
@@ -471,155 +408,25 @@ function _purl_set($op = 'set', $type = PURL_PATH, $value = '', $info = array())
 
 /**
  * Set wrapper for _purl_set()
+ *
+ * @param $type
+ *   A string identifier of a purl type/method
+ * @param $element
+ *   purl_path_element
  */
-function purl_set($type = PURL_PATH, $value = '', $info = array()) {
-  return _purl_set('set', $type, $value, $info);
+function purl_set($type, $element) {
+  return _purl_set('set', $type, $element);
 }
 
 /**
  * Get wrapper for _purl_set()
+ *
+ * @param $type
+ *   A string identifier of a purl type/method
+ * @return an array of purl_path_element that have been set.
  */
-function purl_get($type = PURL_PATH) {
+function purl_get($type = 'all') {
   return _purl_set('get', $type);
-}
-
-/**
- * PAGE CALLBACKS =====================================================
- */
-
-/**
- * Page callback for the purl administration page.
- */
-function purl_admin() {
-  global $pager_page_array, $pager_total, $pager_total_items;
-  $page = isset($_GET['page']) ? $_GET['page'] : 0;
-  $element = 0;
-  $limit = 20;
-  $providers = purl_providers();
-
-  // Convert $page to an array, used by other functions.
-  $pager_page_array = array($page);
-
-  $methods = _purl_options();
-  
-  $merged = array();
-  foreach(array_keys($methods) as $method) {
-    foreach(purl_modifiers($method) as $value => $info) {
-      $info['value'] = $value;
-      $merged[] = $info;
-    }
-  }
-
-  $rows = array();
-  for ($i = $page * $limit; $i < ($page+1) * $limit && $i < count($merged); $i++) {
-    $rows[] = array(
-      $providers[$merged[$i]['provider']]['name'],
-      $merged[$i]['value'],
-      $merged[$i]['id'],
-      $methods[variable_get('purl_method_'. $merged[$i]['provider'], PURL_PATH)],
-    );
-  }
-
-  // We calculate the total of pages as ceil(items / limit).
-  $pager_total_items[$element] = count($merged);
-  $pager_total[$element] = ceil($pager_total_items[$element] / $limit);
-  $pager_page_array[$element] = max(0, min((int)$pager_page_array[$element], ((int)$pager_total[$element]) - 1));
-
-  if ($rows) {
-    $output = theme('table', array(t('Provider'), t('Modifier'), t('ID'), t('Method')), $rows);
-    $output .= theme('pager');
-  }
-  else {
-    $output = "<p>". t('No persistent urls have been registered.') ."</p>";
-  }
-  return $output;
-}
-
-/**
- * Settings form for choosing the operating mode of purl
- */
-function purl_settings_form() {
-  global $base_url;
-  $form = array();
-
-  $options = _purl_options();
-
-  foreach (purl_providers() as $id => $provider) {
-    // Check to see whether provider has limited the available valueing methods
-    if (isset($provider['methods']) && count($provider['methods'])) {
-      $provider_options = array();
-      foreach ($provider['methods'] as $method) {
-        $provider_options[$method] = $options[$method];
-      }
-    }
-    else {
-      $provider_options = $options;
-    }
-
-    $form[$id] = array(
-      '#fieldset' => true,
-      '#provider' => true,
-      '#title' => $provider['name'],
-      '#description' => $provider['description'],
-    );
-    $form[$id]['purl_method_'. $id] = array(
-      '#title' => t('Method'),
-      '#type' => 'select',
-      '#options' => $provider_options,
-      '#default_value' => variable_get('purl_method_'. $id, PURL_PATH),
-    );
-    $form[$id]['purl_method_'. $id .'_key'] = array(
-      '#title' => t('Key'),
-      '#type' => 'textfield',
-      '#size' => 12,
-      '#default_value' => variable_get('purl_method_'. $id .'_key', ''),
-    );
-  }
-
-  $form['purl_location'] = array(
-    '#type' => 'fieldset',
-    // '#title' => t(''),
-  );
-  $form['purl_location']['purl_base_domain'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Default domain'),
-    '#description' => t('Enter the default domain if you are using domain modifiers.'),
-    '#required' => FALSE,
-    '#default_value' => variable_get('purl_base_domain', $base_url),
-  );
-  $form = system_settings_form($form);
-  $form['#theme'] = 'purl_settings_form';
-  return $form;
-}
-
-/**
- * Theme function for purl_settings_form()
- */
-function theme_purl_settings_form($form) {
-  $output = '';
-  $rows = array();
-  foreach (element_children($form) as $id) {
-    $row = array();
-    if (isset($form[$id]['#provider'])) {
-      $name = $form[$id]['#title'];
-      $description = $form[$id]['#description'];
-      unset($form[$id]['#title']);
-      unset($form[$id]['#description']);
-      $row[] = "<strong>$name</strong><div class='description'>$description</div>";
-
-      $cell = '';
-      foreach (element_children($form[$id]) as $item) {
-        unset($form[$id][$item]['#title']);
-        $cell .= drupal_render($form[$id][$item]);
-      }
-      $row[] = $cell;
-    }
-    $rows[] = $row;
-  }
-  $output .= theme('table', array(t('Provider'), t('Modifier type')), $rows);
-  $output .= drupal_render($form);
-  drupal_add_js(drupal_get_path("module", "purl") ."/purl.admin.js");
-  return $output;
 }
 
 /**
@@ -765,18 +572,7 @@ function purl_disable($set = FALSE) {
  * handled by the implementing submit handler.
  */
 function purl_form($provider, $id, $value = '') {
-  switch (variable_get('purl_method_'. $provider, PURL_PATH)) {
-    case PURL_PATH:
-    case PURL_PAIR:
-      $description = t('Choose a value path. May contain only lowercase letters, numbers, dashes and underscores. e.g. "my-value"');
-      break;
-    case PURL_SUBDOMAIN:
-      $description = t('Enter a domain registered for this context, such as "mygroup".  Do not include http://');
-      break;
-    case PURL_DOMAIN:
-      $description = t('Enter a domain registered for this context, such as "www.example.com".  Do not include http://');
-      break;
-  }
+  $processor = purl_get_processor(variable_get('purl_method_'. $provider, PURL_PATH));
 
   $form = array(
     '#tree' => TRUE,
@@ -785,7 +581,7 @@ function purl_form($provider, $id, $value = '') {
   $form['value'] = array(
     '#title' => t('Path value'),
     '#type' => 'textfield',
-    '#description' => $description,
+    '#description' => $processor->description,
     '#maxlength' => 255,
     '#required' => true,
     '#default_value' => $value,
@@ -820,19 +616,54 @@ function purl_form_validate($form) {
 }
 
 /**
+ * Helper function, returns form options for modifier types.
+ *
+ * @param $active
+ *  only return enabled types. Defaults to true.
+ * @return array of options, keys are machine names and values are the human
+ *         readable counterparts.
+ */
+function _purl_options($active = true) {
+  static $enabled_options;
+
+  if (isset($enabled_options) && $active) {
+    return $enabled_options;
+  }
+
+  $options = array(
+    PURL_PATH => t('Path'),
+    PURL_PAIR => t('Keyed pair'),
+    PURL_DOMAIN => t('Full domain'),
+    PURL_SUBDOMAIN => t('Subdomain'),
+    PURL_EXTENSION => t('File extension'),
+  );
+
+  if ($active) {
+    $enabled_options = array();
+    $enabled = variable_get('purl_types', array(PURL_PATH));
+    foreach ($enabled as $v) {
+      if (!empty($v)) {
+        $enabled_options[$v] = $options[$v];
+      }
+    }
+    return $enabled_options;
+  }
+  return $options;
+}
+
+/**
 * Specialized cache for storing modifier information.
 */
 class purl_cache {
-  
+
   protected $cache = array();
-  
+
   function __construct() {
-    $this->cache[PURL_PATH] = array();
-    $this->cache[PURL_PAIR] = array();
-    $this->cache[PURL_SUBDOMAIN] = array();
-    $this->cache[PURL_DOMAIN] = array();
+    foreach (_purl_options() as $k => $v) {
+      $this->cache[$k] = array();
+    }
   }
-  
+
   /**
    * @param $method
    *   The method to add to the cache for
@@ -850,7 +681,7 @@ class purl_cache {
       $this->cache[$method][] = $item;
     }
   }
-  
+
   /**
    * @param $method
    *   The method to retrieve from the cache for.
@@ -873,13 +704,428 @@ class purl_cache {
 }
 
 /**
- * Helper function, returns form options for modifier types.
+ * Factory function to ease instantiation of modifier classes.
  */
-function _purl_options() {
-  return array(
-    PURL_PATH => t('Path'),
-    PURL_PAIR => t('Keyed pair'),
-    PURL_DOMAIN => t('Full domain'),
-    // PURL_SUBDOMAIN => t('Subdomain'),
-  );
+function purl_get_processor($method) {
+  $modifier = "purl_$method";
+  return new $modifier();
 }
+
+/**
+ * Helper function to determine if a url should be rewritten.
+ *
+ * @param $e
+ *   purl_path_element object
+ * @param $o
+ *   url optoins array.
+ * @return true if processing should be skipped, false otherwise.
+ */
+function _purl_skip($e, $o) {
+  if ($o['purl']['disabled'] == true) {
+    return true;
+  }
+  if (isset($o['purl']['remove'])) {
+    return in_array($e->provider, $o['purl']['remove']);
+  }
+  return false;
+}
+
+/**
+ * Processors can inspect and manipulate various parts of a request's URI.
+ */
+interface purl_processor {
+
+  /**
+   * Return the method the processor users.
+   *
+   * @return string, machine name of the method.
+   */
+   public function method();
+
+  /**
+   * Provide a description of processor for the end user
+   *
+   * @return string description.
+   */
+  public function description();
+
+  /**
+   * Detect the the processor value for the current page request
+   *
+   * @return value that can be pased to the parse step.
+   */
+  public function detect();
+
+  /**
+   * Detects processor in the passed 'value'.
+   *
+   * @param $valid_values
+   * @param $value
+   * @return an array of purl_path_element objects
+   */
+  public function parse($valid_values, $value);
+
+  /**
+   * Used to provide compatibility with the path alias system.
+   *
+   * @param $value.
+   *   detected value, by reference so that processors that can remove
+   *   themselves is a method can have more than on value.
+   * @param $element.
+   *   purl_path_element
+   */
+  public function adjust(&$value, $element);
+
+  /**
+   * Responsible for rewriting outgoing links. Note: it's this functions
+   * job to make sure it doesn't alter a link that has already been
+   * treated.
+   *
+   * This must also check $options['purl']['disabled'] and
+   * $optoins['purl']['remove']. The _purl_skip() method is helpful for this.
+   *
+   * @param $path
+   *   string, by-reference the path to modify.
+   * @param $options
+   *   See url() docs
+   * @param $element
+   *   The element to add to the path.
+   */
+  public function rewrite(&$path, &$options, $element);
+}
+
+/**
+ * Path prefixer.
+ */
+class purl_path implements purl_processor {
+
+  public function method() {
+    return PURL_PATH;
+  }
+
+  /**
+   * Detect a default value for 'q' when created.
+   */
+  public function detect() {
+    return isset($_REQUEST["q"]) ? trim($_REQUEST["q"], "/") : '';
+  }
+
+  public function description() {
+    return t('Choose a value path. May contain only lowercase letters, numbers, dashes and underscores. e.g. "my-value"');
+  }
+
+  /**
+   * Tear apart the path and iterate thought it looking for valid values.
+   */
+  public function parse($valid_values, $q) {
+    $parsed = array();
+    $args = explode('/', $q);
+    $arg = $args[0];
+    while (isset($valid_values[$arg])) {
+      $parsed[$arg] = $valid_values[$arg];
+      array_shift($args);
+      $arg = $args[0];
+      if (in_array($arg, $parsed)) {
+        break;
+      }
+    }
+    return purl_path_elements($this, $parsed);
+  }
+
+  /**
+   * if $_GET and $_REQUEST are different, the path has NOT been
+   * aliased. We may need to rewrite the path.
+   */
+  public function adjust(&$q, $item) {
+    if ($_GET['q'] == trim($_REQUEST['q'], '/')) {
+      $q = $this->remove($q, $item);
+      // there is nothing beyond the path value -- treat as frontpage
+      if ($q == '') {
+        $_GET['q'] = variable_get('site_frontpage', 'node');
+      }
+      // pass the rest of the path onto Drupal cleanly
+      else {
+        $q = $_REQUEST['q'] = $_GET['q'] = _purl_get_normal_path($q);
+      }
+    }
+  }
+
+  /**
+   * Removes specific modifier from a query string.
+   *
+   * @param $q
+   *   The current path.
+   * @param $element
+   *   a purl_path_element object
+   * @return path string with the modifier removed.
+   */
+  function remove($q, $element) {
+    $args = explode('/', $q);
+
+    // Remove the first occurrence of each value value from the query string
+    $k = array_search($element->value, $args);
+    if ($k !== FALSE) {
+      unset($args[$k]);
+    }
+    return implode('/', $args);
+  }
+
+  /**
+   * Just need to add the value to the front of the path.
+   */
+  public function rewrite(&$path, &$options, $element) {
+    if (!_purl_skip($element, $options)) {
+      $items = explode('/', $path);
+      array_unshift($items, $element->value);
+      $path = implode('/', $items);
+    }
+  }
+}
+
+/**
+ * Pair pair prefixer.
+ */
+class purl_pair extends purl_path {
+
+  public function method() {
+    return PURL_PAIR;
+  }
+
+  public function parse($valid_values, $q) {
+    $parsed = array();
+    $args = explode('/', $q);
+    $arg = $args[0];
+    while (isset($valid_values[$arg])) {
+      $parsed[$arg] = $valid_values[$arg];
+      array_shift($args);
+      $parsed[$arg]['id'] = array_shift($args);
+
+      $arg = $args[0];
+      if (in_array($arg, $parsed)) {
+        break;
+      }
+    }
+    return purl_path_elements($this, $parsed);
+  }
+
+  /**
+   * Removes specific modifier pair from a query string.
+   *
+   * @param $q
+   *   The current path.
+   * @param $element
+   *   a purl_path_element object
+   * @return path string with the pair removed.
+   */
+  function remove($q, $element) {
+    $args = explode('/', $q);
+    array_splice($args, array_search($element->value, $args), 2);
+    return implode('/', $args);
+  }
+
+  public function rewrite(&$path, &$options, $element) {
+    if (!_purl_skip($element, $options)) {
+      $items = explode('/', $path);
+      array_unshift($items, "{$element->value}/{$element->id}");
+      $path = implode('/', $items);
+    }
+  }
+}
+
+/**
+ *  Full domain handling.
+ */
+class purl_domain implements purl_processor {
+
+  function detect() {
+    return str_replace('http://','',$_SERVER['HTTP_HOST']);
+  }
+
+  public function method() {
+    return PURL_DOMAIN;
+  }
+
+  public function description() {
+    return t('Enter a domain registered for this context, such as "www.example.com".  Do not include http://');
+  }
+
+  /**
+   * Simply match our 'q' (aka domain) against an allowed value.
+   */
+  public function parse($valid_values, $q) {
+    $parsed = array();
+    if (isset($valid_values[$q])) {
+      $parsed[$q] = $valid_values[$q];
+    }
+    return purl_path_elements($this, $parsed);
+  }
+
+  public function adjust(&$value, $item) { return; }
+
+  /**
+   * Either force the url, or set it back to the base.
+   */
+  public function rewrite(&$path, &$options, $element) {
+    $options['absolute'] = TRUE;
+    if (!_purl_skip($element, $options)) {
+      $options['base_url'] = "http://{$element->value}";
+    }
+    else {
+      $options['base_url'] = variable_get('purl_base_domain', $base_url);
+    }
+  }
+}
+
+/**
+ * Subdomain prefixing.
+ */
+class purl_subdomain implements purl_processor {
+
+  function detect() {
+    $parts = explode('.', str_replace('http://','',$_SERVER['HTTP_HOST']));
+    return array_shift($parts);
+  }
+
+  public function method() {
+    return PURL_SUBDOMAIN;
+  }
+
+  public function description() {
+    return t('Enter a sub-domain for this context, such as "mygroup".  Do not include http://');
+  }
+
+  public function parse($valid_values, $q) {
+    $parsed = array();
+    if (isset($valid_values[$q])) {
+      $parsed[$q] = $valid_values[$q];
+    }
+    return purl_path_elements($this, $parsed);
+  }
+
+  public function adjust(&$value, $item) { return; }
+
+  public function rewrite(&$path, &$options, $element) {
+    $options['absolute'] = TRUE;
+    if (!_purl_skip($element, $options)) {
+      // Check to see if the link has already been treated.
+      $parts = explode('.', str_replace('http://','', $options['base_url']));
+      $possible = array_shift($parts);
+      $matches = purl_parse($this, $possible);
+
+      // If not add our subdomain.
+      if (!count($matches)) {
+        // ...but replace what we checked first.
+        array_unshift($parts, $possible);
+        array_unshift($parts, $element->value);
+
+        $options['absolute'] = TRUE;
+        $options['base_url'] = "http://". implode('.', $parts);
+      }
+    }
+    else {
+      $options['base_url'] = variable_get('purl_base_domain', $base_url);
+    }
+  }
+}
+
+/**
+ * File extension style. Like ".csv"
+ */
+class purl_extension implements purl_processor {
+
+  public function detect(){
+    $q = isset($_REQUEST["q"]) ? trim($_REQUEST["q"], "/") : '';
+    $last = explode('.', array_pop(explode('/', $q)));
+    if (count($last) > 1) {
+      return array_pop($last);
+    }
+    return '';
+  }
+
+  public function method() {
+    return PURL_EXTENSION;
+  }
+
+  public function description() {
+    return t('Enter a extension for this context, such as "csv".');
+  }
+
+  public function parse($valid_values, $q) {
+    $parsed = array();
+    $parsed = array();
+    if (isset($valid_values[$q])) {
+      $parsed[$q] = $valid_values[$q];
+    }
+    return purl_path_elements($this, $parsed);
+  }
+
+  /**
+   * if $_GET and $_REQUEST are different, the path has NOT been
+   * aliased. We may need to rewrite the path.
+   */
+  public function adjust(&$value, $item) {
+    if ($_GET['q'] == trim($_REQUEST['q'], '/')) {
+      $q = $this->remove($_GET['q'], $item);
+      // pass the rest of the path onto Drupal cleanly
+      $_REQUEST['q'] = $_GET['q'] = _purl_get_normal_path($q);
+    }
+  }
+
+  /**
+   * Remove our extension from the tail end of the path.
+   *
+   * @param $q
+   *   The current path.
+   * @param $element
+   *   a purl_path_element object
+   * @return path string with the extension removed.
+   */
+  public function remove($q, $element ) {
+    $args = explode('.', $q);
+    if (count($args > 1)) {
+      $extension = array_pop($args);
+      if ($element->value == $extension) {
+        return implode('.', $args);
+      }
+    }
+    return $q;
+  }
+
+  /**
+   * Because of the expected usage of the files extensions we don't provide
+   * a rewrite.
+   */
+  public function rewrite(&$path, &$options, $element) {}
+}
+
+/**
+ * Generate a array of purl_path_elements objects from parsed values.
+ *
+ * @param $processor
+ *   The processor used to parse the string.
+ * @param $values
+ *    Array or values which were detected.
+ * @return an array of purl_path_elements
+ */
+function purl_path_elements($processor, $values) {
+  $return = array();
+  foreach ($values as $v => $i) {
+    $return[$v] = new purl_path_element($processor, $v, $i['provider'], $i['id']);
+  }
+  return $return;
+}
+
+class purl_path_element {
+  public $processor;
+  public $value;
+  public $provider;
+  public $id;
+
+  function __construct($processor, $value, $provider, $id) {
+    $this->processor = $processor;
+    $this->value = $value;
+    $this->provider = $provider;
+    $this->id = $id;
+  }
+}
+
