@@ -198,13 +198,17 @@ function purl_url_rewrite(&$path, &$options, $original) {
           }
         }
       }
-      // Ensure we replace any global ids for this provider.
-      foreach ($elements as $i => $e) {
-        if ($e->provider == $v['provider']) {
-          unset($elements[$i]);
-        }
-      }
-      $elements[] = new purl_path_element($processor, $k, $v['provider'], $v['id']);
+      // TODO Allow providers to describe how they should intereact with each 
+      // other. For now just assume that an explicitly set provider is the only
+      // one to use
+      // // Ensure we replace any global ids for this provider.
+      // foreach ($elements as $i => $e) {
+      //   if ($e->provider == $v['provider']) {
+      //     unset($elements[$i]);
+      //   }
+      // }
+      $e = new purl_path_element($processor, $k, $v['provider'], $v['id']);
+      $elements = array($e);
     }
     foreach ($elements as $e) {
       $e->processor->rewrite($path, $options, $e);
