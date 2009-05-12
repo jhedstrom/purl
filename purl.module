@@ -824,11 +824,11 @@ class purl_path implements purl_processor {
   public function parse($valid_values, $q) {
     $parsed = array();
     $args = explode('/', $q);
-    $arg = $args[0];
+    $arg = current($args);
     while (isset($valid_values[$arg])) {
       $parsed[$arg] = $valid_values[$arg];
       array_shift($args);
-      $arg = $args[0];
+      $arg = current($args);
       if (in_array($arg, $parsed)) {
         break;
       }
