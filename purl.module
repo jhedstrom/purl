@@ -725,7 +725,7 @@ function purl_get_processor($method) {
  * @return true if processing should be skipped, false otherwise.
  */
 function _purl_skip($e, $o) {
-  if ($o['purl']['disabled'] == true) {
+  if (!empty($o['purl']['disabled'])) {
     return true;
   }
   if (isset($o['purl']['remove'])) {
