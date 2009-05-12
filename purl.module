@@ -6,6 +6,7 @@ define('PURL_SUBDOMAIN', 'subdomain');
 define('PURL_DOMAIN', 'domain');
 define('PURL_PAIR', 'pair');
 define('PURL_EXTENSION', 'extension');
+define('PURL_USERAGENT', 'useragent');
 
 /**
  * Implementation of hook_theme().
@@ -640,6 +641,7 @@ function _purl_options($active = true) {
     PURL_DOMAIN => t('Full domain'),
     PURL_SUBDOMAIN => t('Subdomain'),
     PURL_EXTENSION => t('File extension'),
+    PURL_USERAGENT => t('User agent'),
   );
 
   if ($active) {
@@ -1099,6 +1101,45 @@ class purl_extension implements purl_processor {
    * Because of the expected usage of the files extensions we don't provide
    * a rewrite.
    */
+  public function rewrite(&$path, &$options, $element) {}
+}
+
+/**
+ * User agent style.
+ */
+class purl_useragent implements purl_processor {
+  public function method() {
+    return 'useragent';
+  }
+
+  public function description() {
+    return t('Enter a user agent for this context, such as "iPhone".');
+  }
+
+  public function detect() {
+    $useragent = $_SERVER['HTTP_USER_AGENT'];
+    if (!empty($useragent)) {
+      return $useragent;
+    }
+    return '';
+  }
+
+  /**
+   * See a valid value is present in the HTTP_USER_AGENT. Note: we're using
+   * stripos() which makes this check relatively easy to pass..
+   */
+  public function parse($valid_values, $useragent) {
+    foreach ($valid_values as $key => $value) {
+      if (stripos($useragent, $key) !== FALSE) {
+        return purl_path_elements($this, $valid_values);
+      }
+    }
+  }
+
+  /**
+   * We cannot alter the user agent, not need to try.
+   */
+  public function adjust(&$value, $element) {}
   public function rewrite(&$path, &$options, $element) {}
 }
 
