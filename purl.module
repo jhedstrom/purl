@@ -26,8 +26,8 @@ function purl_menu() {
   $items = array();
   $items['admin/settings/purl'] = array(
     'type' => MENU_NORMAL_ITEM,
-    'title' => t('Persistent URL'),
-    'description' => t('Settings for persistent url.'),
+    'title' => 'Persistent URL',
+    'description' => 'Settings for persistent url.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('purl_settings_form'),
     'file' => 'purl.admin.inc',
@@ -37,7 +37,7 @@ function purl_menu() {
   );
   $items['admin/settings/purl/settings'] = array(
     'type' => MENU_DEFAULT_LOCAL_TASK,
-    'title' => t('Settings'),
+    'title' => 'Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('purl_settings_form'),
     'file' => 'purl.admin.inc',
@@ -47,7 +47,7 @@ function purl_menu() {
   );
   $items['admin/settings/purl/list'] = array(
     'type' => MENU_LOCAL_TASK,
-    'title' => t('Modifiers'),
+    'title' => 'Modifiers',
     'page callback' => 'purl_admin',
     'file' => 'purl.admin.inc',
     'access callback' => 'user_access',
@@ -56,7 +56,7 @@ function purl_menu() {
   );
   $items['admin/settings/purl/types'] = array(
     'type' => MENU_LOCAL_TASK,
-    'title' => t('Types'),
+    'title' => 'Types',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('purl_types_form'),
     'file' => 'purl.admin.inc',
