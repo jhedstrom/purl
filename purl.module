@@ -68,6 +68,20 @@ function purl_menu() {
 }
 
 /**
+ * Implementation of hook_form_alter.
+ */
+function purl_form_alter(&$form, &$form_state, $form_id) {
+  switch ($form_id) {
+    case 'menu_edit_menu':
+    case 'menu_edit_item':
+      module_load_include('inc','purl', 'purl.admin');
+      _purl_form_alter($form, $form_state, $form_id);
+      break;
+  }
+}
+
+
+/**
  * Implementation of hook_init()
  * Checks for any valid persistent urls in request string and fire callback appropriately
  */

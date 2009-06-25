@@ -157,3 +157,93 @@ function purl_types_form() {
   );
   return system_settings_form($form);
 }
+
+/**
+ * Private implementation of hook_form_alter()
+ */
+function _purl_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'menu_edit_menu') {
+    if (isset($form['menu_name']['#value'])) {
+      $form['purl'] = array(
+        '#tree' => true,
+        '#type' => 'fieldset',
+        '#title' => t('Persistant URL behavoir'),
+        '#description' => t('All links are normally rewritten to contain the active persistant url elements. You may set all items in this menu to maintain existing modifications (the default), or to discard them.'),
+      );
+      $form['purl']['rewrite'] = array(
+        '#type' => 'select',
+        '#options' => array('enabled' => t("Maintain"), 'disabled' => ("Discard")),
+        '#title' => t('Behavoir'),
+        '#default_value' => variable_get('purl_menu_behavoir_'. $form['menu_name']['#value'], 'enabled'),
+      );
+      $form['purl']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Submit'),
+        '#submit' => array('purl_menu_edit_submit'),
+      );
+    }
+  }
+  elseif ($form_id == 'menu_edit_item') {
+    $options = $form['menu']['options']['#value'];
+    $form['purl'] = array(
+      '#tree' => true,
+      '#type' => 'fieldset',
+      '#title' => t('Persistant URL behavoir'),
+      '#description' => t('All links are normally rewritten to contain the active persistant url elements. You may set this item to maintain existing modifications (the default), or to discard them.'),
+      '#weight' => -1,
+    );
+    $form['purl']['rewrite'] = array(
+      '#type' => 'select',
+      '#options' => array('enabled' => t("Maintain"), 'disabled' => ("Discard")),
+      '#title' => t('Behavoir'),
+      '#default_value' => (isset($options['purl']) && $options['purl'] == 'disabled') ? 'disabled' : 'enabled',
+    );
+    $form['#validate'][] = 'purl_item_edit_validate';
+    $form['#submit'][] = 'purl_item_edit_submit';
+  }
+}
+
+// Submit handler for menu_edit_menu
+function purl_menu_edit_submit($form, &$form_state) {
+  $menu = $form_state['values'];
+  $tree = menu_tree_all_data($menu['menu_name']);
+
+  foreach ($tree as $item) {
+    $link = menu_link_load($item['link']['mlid']);
+    if ($menu['purl']['rewrite'] == 'disabled') {
+      $link['options']['purl'] = 'disabled';
+    }
+    else {
+      unset($link['options']['purl']);
+    }
+    menu_link_save($link);
+  }
+  menu_cache_clear($menu['menu_name']);
+
+  if ($menu['purl']['rewrite'] == 'disabled') {
+    variable_set('purl_menu_behavoir_' .$menu['menu_name'], 'disabled');
+  }
+  else {
+    variable_del('purl_menu_behavoir_' .$menu['menu_name']);
+  }
+}
+
+/**
+ * Validate handler for menu_edit_item
+ *
+ * Doesn't actually validate, but rather moves data to where 
+ * menu_edit_item_submit() expects it.
+ */
+function purl_item_edit_validate($form, &$form_state) {
+  if ($form_state['values']['purl']['rewrite'] == 'disabled') {
+    $form_state['values']['menu']['options']['purl'] = 'disabled';
+  }
+  else {
+    unset($form_state['values']['menu']['options']['purl']);
+  }
+}
+
+// Submit handler for menu_edit_item
+function purl_item_edit_submit($form, &$form_state) {
+  menu_cache_clear($form_state['values']['menu']['menu_name']);
+}
