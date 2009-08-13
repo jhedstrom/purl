@@ -898,10 +898,9 @@ class purl_path implements purl_processor {
   function remove($q, $element) {
     $args = explode('/', $q);
 
-    // Remove the first occurrence of each value value from the query string
-    $k = array_search($element->value, $args);
-    if ($k !== FALSE) {
-      unset($args[$k]);
+    // Remove the value from the front of the query string
+    if (current($args) === (string) $element->value) {
+      array_shift($args);
     }
     return implode('/', $args);
   }
