@@ -607,7 +607,8 @@ function purl_disable($set = FALSE) {
  * handled by the implementing submit handler.
  */
 function purl_form($provider, $id, $value = '') {
-  $processor = purl_get_processor(variable_get('purl_method_'. $provider, PURL_PATH));
+  $method = variable_get('purl_method_'. $provider, PURL_PATH);
+  $processor = purl_get_processor($method);
 
   $form = array(
     '#tree' => TRUE,
@@ -616,13 +617,16 @@ function purl_form($provider, $id, $value = '') {
 
   $processors = _purl_options();
 
+  global $base_url;
   $form['value'] = array(
-    '#title' => $processors[variable_get('purl_method_'. $provider, PURL_PATH)],
+    '#title' => $processors[$method],
     '#type' => 'textfield',
     '#description' => $processor->description(),
+    '#size' => 20,
     '#maxlength' => 255,
-    '#required' => true,
+    '#required' => TRUE,
     '#default_value' => $value,
+    '#field_prefix' => $method == PURL_PATH ? $base_url .'/' : NULL,
   );
   $form['provider'] = array(
     '#type' => 'value',
