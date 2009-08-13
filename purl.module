@@ -613,10 +613,13 @@ function purl_form($provider, $id, $value = '') {
     '#tree' => TRUE,
     '#element_validate' => array('purl_form_validate'),
   );
+
+  $processors = _purl_options();
+
   $form['value'] = array(
-    '#title' => t('Path value'),
+    '#title' => $processors[variable_get('purl_method_'. $provider, PURL_PATH)],
     '#type' => 'textfield',
-    '#description' => !empty($processor->description) ? $processor->description : '',
+    '#description' => $processor->description(),
     '#maxlength' => 255,
     '#required' => true,
     '#default_value' => $value,
@@ -847,7 +850,7 @@ class purl_path implements purl_processor {
   }
 
   public function description() {
-    return t('Choose a value path. May contain only lowercase letters, numbers, dashes and underscores. e.g. "my-value"');
+    return t('Choose a path. May contain only lowercase letters, numbers, dashes and underscores. e.g. "my-value"');
   }
 
   /**
