@@ -13,7 +13,7 @@ Drupal.purl_admin.attach = function() {
 }
 
 Drupal.purl_admin.alter = function(elem){
-  if (elem.value == 'pair') {
+  if (elem.value == 'pair' || elem.value == 'querystring') {
     $(elem).parents('tr').find('input[id^="edit-purl-"]').show();
   }
   else {
