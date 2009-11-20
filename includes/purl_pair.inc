@@ -7,7 +7,7 @@
 class purl_pair extends purl_path {
 
   public function method() {
-    return PURL_PAIR;
+    return 'pair';
   }
 
   public function parse($valid_values, $q) {

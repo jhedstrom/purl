@@ -34,7 +34,7 @@ class purl_useragent implements purl_processor {
   }
 
   /**
-   * We cannot alter the user agent, not need to try.
+   * We cannot alter the user agent, no need to try.
    */
   public function adjust(&$value, $element) {}
   public function rewrite(&$path, &$options, $element) {}

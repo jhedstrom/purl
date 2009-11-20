@@ -16,7 +16,7 @@ class purl_extension implements purl_processor {
   }
 
   public function method() {
-    return PURL_EXTENSION;
+    return 'extension';
   }
 
   public function description() {

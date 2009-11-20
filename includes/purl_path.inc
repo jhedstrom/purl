@@ -7,7 +7,7 @@
 class purl_path implements purl_processor {
 
   public function method() {
-    return PURL_PATH;
+    return 'path';
   }
 
   /**

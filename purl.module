@@ -1,10 +1,6 @@
 <?php
 // $Id$
 
-// TODO get rid of these.
-define('PURL_PAIR', 'pair');
-define('PURL_QUERYSTRING', 'querystring');
-
 /**
  * Implementation of hook_theme().
  */
@@ -273,9 +269,6 @@ function purl_generate_rewrite_elements($item) {
  *    ),
  *  );
  *
- * TODO Figure out a way not to check explicitly for PURL_PAIR or
- *      PURL_QUERYSTRING as the method.
- *
  * @param $requested_method
  *   A string identifier of a purl type/method
  * @return
@@ -293,9 +286,9 @@ function purl_modifiers($requested_method) {
     foreach ($providers as $provider => $items) {
       // Store providers for use when retrieving db values
       $method = variable_get('purl_method_'. $provider, 'path');
-
       // If using a value pair we don't need to cache the valid values.
-      if ($method == PURL_PAIR || $method == PURL_QUERYSTRING) {
+      $info = ctools_get_plugins('purl', 'processor', $method);
+      if (!$info($info['null_id'])) {
         $value = variable_get('purl_method_'. $provider .'_key', false);
         if ($value != false) {
           $values[$method][$value] = array(
@@ -323,7 +316,8 @@ function purl_modifiers($requested_method) {
     foreach ($providers as $provider => $info) {
       $method = variable_get('purl_method_'. $provider, 'path');
       // Don't load all data base values for keyed pairs.
-      if ($method == PURL_PAIR || $method == PURL_QUERYSTRING) {
+      $info = ctools_get_plugins('purl', 'processor', $method);
+      if ($info['null_id']) {
         $value = variable_get('purl_method_'. $provider .'_key', false);
         if ($value != false) {
           $values[$method][$value] = array(
@@ -837,6 +831,7 @@ function purl_purl_processor() {
   );
   $info['pair'] = array(
     'title' => t('Path pair'),
+    'null_id' => true, // Don't attempt to user distinct ids with this processor
     'handler' => array(
       'class' => 'purl_pair',
       'parent' => 'path',
@@ -878,6 +873,7 @@ function purl_purl_processor() {
   );
   $info['querystring'] = array(
     'title' => t('Query string'),
+    'null_id' => true, // Don't attempt to user distinct ids with this processor
     'handler' => array(
       'class' => 'purl_querystring',
       'file' => 'purl_querystring.inc',

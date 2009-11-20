@@ -12,7 +12,7 @@ class purl_subdomain implements purl_processor {
   }
 
   public function method() {
-    return PURL_SUBDOMAIN;
+    return 'subdomain';
   }
 
   public function description() {

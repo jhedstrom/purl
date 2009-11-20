@@ -11,7 +11,7 @@ class purl_domain implements purl_processor {
   }
 
   public function method() {
-    return PURL_DOMAIN;
+    return 'domain';
   }
 
   public function description() {

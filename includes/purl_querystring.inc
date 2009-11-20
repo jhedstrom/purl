@@ -7,7 +7,7 @@
 class purl_querystring implements purl_processor {
 
   public function method() {
-    return PURL_QUERYSTRING;
+    return 'querystring';
   }
 
   /**
