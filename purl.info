@@ -2,3 +2,4 @@
 name = Persistent URL
 description = "Provides tools for using persistant URL pieces"
 core = 6.x
+dependencies[] = ctools
