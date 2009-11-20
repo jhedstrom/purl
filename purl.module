@@ -2,7 +2,6 @@
 // $Id$
 
 // TODO get rid of these.
-define('PURL_PATH', 'path');
 define('PURL_PAIR', 'pair');
 define('PURL_QUERYSTRING', 'querystring');
 
@@ -235,7 +234,7 @@ function purl_url_rewrite(&$path, &$options, $original) {
  * @return a purl_path_element object.
  */
 function purl_generate_rewrite_elements($item) {
-  $method = variable_get('purl_method_'. $item['provider'], PURL_PATH);
+  $method = variable_get('purl_method_'. $item['provider'], 'path');
 
   $processor = purl_get_processor($method);
   $local_modifiers = purl_modifiers($method);
@@ -293,7 +292,7 @@ function purl_modifiers($requested_method) {
 
     foreach ($providers as $provider => $items) {
       // Store providers for use when retrieving db values
-      $method = variable_get('purl_method_'. $provider, PURL_PATH);
+      $method = variable_get('purl_method_'. $provider, 'path');
 
       // If using a value pair we don't need to cache the valid values.
       if ($method == PURL_PAIR || $method == PURL_QUERYSTRING) {
@@ -322,7 +321,7 @@ function purl_modifiers($requested_method) {
     $providers = array_diff_key(purl_providers(), $providers);
 
     foreach ($providers as $provider => $info) {
-      $method = variable_get('purl_method_'. $provider, PURL_PATH);
+      $method = variable_get('purl_method_'. $provider, 'path');
       // Don't load all data base values for keyed pairs.
       if ($method == PURL_PAIR || $method == PURL_QUERYSTRING) {
         $value = variable_get('purl_method_'. $provider .'_key', false);
@@ -398,7 +397,7 @@ function purl_providers($by_method = FALSE) {
       $methods = new purl_cache();
 
       foreach ($providers AS $id => $provider) {
-        $methods->add(variable_get('purl_method_'. $id, PURL_PATH), array($id => $provider));
+        $methods->add(variable_get('purl_method_'. $id, 'path'), array($id => $provider));
       }
     }
     return $methods->get();
@@ -634,7 +633,7 @@ function purl_disable($set = FALSE) {
  * handled by the implementing submit handler.
  */
 function purl_form($provider, $id, $value = '') {
-  $method = variable_get('purl_method_'. $provider, PURL_PATH);
+  $method = variable_get('purl_method_'. $provider, 'path');
   $processor = purl_get_processor($method);
 
   $form = array(
@@ -653,7 +652,7 @@ function purl_form($provider, $id, $value = '') {
     '#maxlength' => 255,
     '#required' => TRUE,
     '#default_value' => $value,
-    '#field_prefix' => $method == PURL_PATH ? $base_url .'/' : NULL,
+    '#field_prefix' => $method == 'purl' ? $base_url .'/' : NULL,
   );
   $form['provider'] = array(
     '#type' => 'value',
@@ -767,6 +766,7 @@ class purl_cache {
  * Factory function to ease instantiation of processor classes.
  */
 function purl_get_processor($method) {
+  module_load_include('inc', 'purl', 'includes/purl_processor');
   ctools_include('plugins');
   $class = ctools_plugin_load_class('purl', 'processor', $method, 'handler'); 
   return new $class();
@@ -789,71 +789,6 @@ function _purl_skip($e, $o) {
     return in_array($e->provider, $o['purl']['remove']);
   }
   return false;
-}
-
-
-/**
- * Processors can inspect and manipulate various parts of a request's URI.
- */
-interface purl_processor {
-
-  /**
-   * Return the method the processor users.
-   *
-   * @return string, machine name of the method.
-   */
-   public function method();
-
-  /**
-   * Provide a description of processor for the end user
-   *
-   * @return string description.
-   */
-  public function description();
-
-  /**
-   * Detect the the processor value for the current page request
-   *
-   * @return value that can be pased to the parse step.
-   */
-  public function detect();
-
-  /**
-   * Detects processor in the passed 'value'.
-   *
-   * @param $valid_values
-   * @param $value
-   * @return an array of purl_path_element objects
-   */
-  public function parse($valid_values, $value);
-
-  /**
-   * Used to provide compatibility with the path alias system.
-   *
-   * @param $value.
-   *   detected value, by reference so that processors that can remove
-   *   themselves is a method can have more than on value.
-   * @param $element.
-   *   purl_path_element
-   */
-  public function adjust(&$value, $element);
-
-  /**
-   * Responsible for rewriting outgoing links. Note: it's this functions
-   * job to make sure it doesn't alter a link that has already been
-   * treated.
-   *
-   * This must also check $options['purl']['disabled'] and
-   * $options['purl']['remove']. The _purl_skip() method is helpful for this.
-   *
-   * @param $path
-   *   string, by-reference the path to modify.
-   * @param $options
-   *   See url() docs
-   * @param $element
-   *   The element to add to the path.
-   */
-  public function rewrite(&$path, &$options, $element);
 }
 
 /**
