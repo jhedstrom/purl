@@ -127,7 +127,7 @@ function _purl_init($method) {
       $processor->adjust($value, $element);
 
       // Let active modifiers do their thing.
-      purl_cache()->add($method, $element)->set($element);
+      purl_active()->add($method, $element)->set($element);
     }
   }
 }
@@ -192,7 +192,7 @@ function purl_url_rewrite(&$path, &$options, $original) {
       $global_elements = array();
       // Retrieve the path values for the current page that were
       // "stripped out" and write them back into url paths.
-      foreach (purl_cache()->get() as $method => $items) {
+      foreach (purl_active()->get() as $method => $items) {
         // Array_pop instead of iterating to preseve order.
         while ($item = array_pop($items)) {
           $global_elements[$item->provider] = $item;
@@ -637,9 +637,9 @@ function _purl_options($active = true) {
 }
 
 /**
- * Get the purl cache. Essentially makes the cache a singleton.
+ * Get active purl modifiers for this page.
  */
-function purl_cache() {
+function purl_active() {
   static $cache;
   if (!isset($cache)) {
     $cache = new purl_cache();
