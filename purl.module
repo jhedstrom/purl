@@ -288,7 +288,7 @@ function purl_modifiers($requested_method) {
       $method = variable_get('purl_method_'. $provider, 'path');
       // If using a value pair we don't need to cache the valid values.
       $info = ctools_get_plugins('purl', 'processor', $method);
-      if (!$info($info['null_id'])) {
+      if (!empty($info['null_id'])) {
         $value = variable_get('purl_method_'. $provider .'_key', false);
         if ($value != false) {
           $values[$method][$value] = array(
