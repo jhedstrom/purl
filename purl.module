@@ -123,11 +123,11 @@ function _purl_init($method) {
 
   if (is_array($parsed)) {
     foreach ($parsed as $element) {
-      // Let active modifiers do thier thing.
-      purl_set($method, $element);
-
       // Allow adjustment of page request globals.
       $processor->adjust($value, $element);
+
+      // Let active modifiers do their thing.
+      purl_cache()->add($method, $element)->set($element);
     }
   }
 }
@@ -192,7 +192,7 @@ function purl_url_rewrite(&$path, &$options, $original) {
       $global_elements = array();
       // Retrieve the path values for the current page that were
       // "stripped out" and write them back into url paths.
-      foreach (purl_get() as $method => $items) {
+      foreach (purl_cache()->get() as $method => $items) {
         // Array_pop instead of iterating to preseve order.
         while ($item = array_pop($items)) {
           $global_elements[$item->provider] = $item;
@@ -399,74 +399,6 @@ function purl_providers($by_method = FALSE) {
   else {
     return $providers;
   }
-}
-
-/**
- * Static cache function for setting + storing any valued modifiers
- * that are present on this page's request.
- *
- * @param $op
- *   'set' or 'get'
- * @param $type
- *   A string identifier of a purl type/method
- * @param $e
- *   purl_path_element, required for setting.
- */
-function _purl_set($op = 'set', $type, $e = null) {
-  static $used;
-  if (!$used) {
-    $used = new purl_cache();
-  }
-  switch ($op) {
-    case 'set':
-      // Store value for url rewriting later on in the stack
-      $used->add($type, $e, false);
-
-      // Fire the provider callback
-      if ($e->provider && $e->id) {
-        $providers = purl_providers();
-        $callback = $providers[$e->provider]['callback'];
-        if (function_exists($callback)) {
-          $args = array();
-          if (isset($providers[$e->provider]['callback arguments'])) {
-            $args = $providers[$e->provider]['callback arguments'];
-          }
-          $args[] = $e->id;
-          call_user_func_array($callback, $args);
-        }
-      }
-      break;
-    case 'get':
-      if ($type === 'all') {
-        return $used->get();
-      }
-      else {
-        return $used->get($type);
-      }
-  }
-}
-
-/**
- * Set wrapper for _purl_set()
- *
- * @param $type
- *   A string identifier of a purl type/method
- * @param $element
- *   purl_path_element
- */
-function purl_set($type, $element) {
-  return _purl_set('set', $type, $element);
-}
-
-/**
- * Get wrapper for _purl_set()
- *
- * @param $type
- *   A string identifier of a purl type/method
- * @return an array of purl_path_element that have been set.
- */
-function purl_get($type = 'all') {
-  return _purl_set('get', $type);
 }
 
 /**
@@ -705,6 +637,17 @@ function _purl_options($active = true) {
 }
 
 /**
+ * Get the purl cache. Essentially makes the cache a singleton.
+ */
+function purl_cache() {
+  static $cache;
+  if (!isset($cache)) {
+    $cache = new purl_cache();
+  }
+  return $cache;
+}
+
+/**
 * Specialized cache for storing modifier information.
 */
 class purl_cache {
@@ -733,13 +676,14 @@ class purl_cache {
     else {
       $this->cache[$method][] = $item;
     }
+    return $this;
   }
 
   /**
    * @param $method
    *   The method to retrieve from the cache for.
-   * @param $item
-   *   Optionally and key of the required info.
+   * @param $id
+   *   Optional key of the required info.
    *
    * @return the desired info or false if an id doesn't exist.
    */
@@ -753,6 +697,53 @@ class purl_cache {
     else {
       return $this->cache;
     }
+  }
+
+  /**
+   * @param $e
+   *   The path element for which to fire the provider handler.
+   */
+  public function set($e) {
+    if ($e->provider && $e->id) {
+      $providers = purl_providers();
+      $callback = $providers[$e->provider]['callback'];
+      if (function_exists($callback)) {
+        $args = array();
+        if (isset($providers[$e->provider]['callback arguments'])) {
+          $args = $providers[$e->provider]['callback arguments'];
+        }
+        $args[] = $e->id;
+        call_user_func_array($callback, $args);
+      }
+    }
+    return $this;
+  }
+
+  /**
+   * @param $method
+   *   Optional method to remove the cache for.
+   * @param $provider
+   *   Optional provider to remove the cache for.
+   */
+  public function remove($method = NULL, $provider = NULL) {
+    if (isset($provider)) {
+      $methods = isset($method) ? array($method) : array_keys($this->cache);
+      foreach ($methods as $method) {
+        if (isset($this->cache[$method])) {
+          foreach ($this->cache[$method] as $key => $item) {
+            if (is_object($item) && !empty($item->provider) && $item->provider == $provider) {
+              unset($this->cache[$method][$key]);
+            }
+          }
+        }
+      }
+    }
+    else if (isset($method)) {
+      if (isset($this->cache[$method])) {
+        unset($this->cache[$method]);
+      }
+    }
+    return $this;
   }
 }
 
