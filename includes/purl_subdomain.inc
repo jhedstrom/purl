@@ -6,6 +6,19 @@
  */
 class purl_subdomain implements purl_processor {
 
+  public function admin_form(&$form, $id) {
+    $form['purl_location'] = array(
+      '#type' => 'fieldset',
+    );
+    $form['purl_location']['purl_base_domain'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Default domain'),
+      '#description' => t('Enter the default domain if you are using domain modifiers.'),
+      '#required' => FALSE,
+      '#default_value' => variable_get('purl_base_domain', $base_url),
+    );
+  }
+
   function detect() {
     $parts = explode('.', str_replace('http://','',$_SERVER['HTTP_HOST']));
     return array_shift($parts);

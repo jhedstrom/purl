@@ -10,6 +10,8 @@ class purl_path implements purl_processor {
     return 'path';
   }
 
+  public function admin_form(&$form, $id) { }
+
   /**
    * Detect a default value for 'q' when created.
    */
@@ -66,7 +68,7 @@ class purl_path implements purl_processor {
    *   a purl_path_element object
    * @return path string with the modifier removed.
    */
-  function remove($q, $element) {
+  public function remove($q, $element) {
     $args = explode('/', $q);
 
     // Remove the value from the front of the query string

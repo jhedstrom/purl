@@ -9,6 +9,8 @@ class purl_useragent implements purl_processor {
     return 'useragent';
   }
 
+  public function admin_form(&$form, $id) { }
+
   public function description() {
     return t('Enter a user agent for this context, such as "iPhone".');
   }

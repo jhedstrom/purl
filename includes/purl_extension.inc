@@ -6,6 +6,8 @@
  */
 class purl_extension implements purl_processor {
 
+  public function admin_form(&$form, $id) { }
+
   public function detect(){
     $q = isset($_REQUEST["q"]) ? trim($_REQUEST["q"], "/") : '';
     $last = explode('.', array_pop(explode('/', $q)));

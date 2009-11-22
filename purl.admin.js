@@ -13,12 +13,10 @@ Drupal.purl_admin.attach = function() {
 }
 
 Drupal.purl_admin.alter = function(elem){
-  if (elem.value == 'pair' || elem.value == 'querystring') {
-    $(elem).parents('tr').find('input[id^="edit-purl-"]').show();
-  }
-  else {
-    $(elem).parents('tr').find('input[id^="edit-purl-"]').hide();
-  }
+  // Fist, hide anything in the config column of this row.
+  $(elem).parents('td').next().find('div.form-item').hide();
+  // Then, make items visible that have an id based on the selected value.
+  $(elem).parents('td').next().find('div[id^="edit-purl-method-'+elem.value+'"]').show();
 }
 
 Drupal.behaviors.purl = function() {

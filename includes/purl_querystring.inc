@@ -10,6 +10,15 @@ class purl_querystring implements purl_processor {
     return 'querystring';
   }
 
+  public function admin_form(&$form, $id) {
+    $form[$id]['extra']['purl_method_querystring_key'] = array(
+      '#title' => t('Key'),
+      '#type' => 'textfield',
+      '#size' => 12,
+      '#default_value' => variable_get('purl_method_querystring_key', ''),
+    );
+  }
+
   /**
    * Detect a default value for in the GET request, ignore elements drupal uses
    * already.

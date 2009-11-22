@@ -14,6 +14,11 @@ interface purl_processor {
   public function method();
 
   /**
+   * Allow extension of the admin setup form.
+   */
+  public function admin_form(&$form, $id);
+
+  /**
    * Provide a description of processor for the end user
    *
    * @return string description.

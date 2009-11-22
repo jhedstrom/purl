@@ -10,6 +10,15 @@ class purl_pair extends purl_path {
     return 'pair';
   }
 
+  public function admin_form(&$form, $id) {
+    $form[$id]['extra']['purl_method_pair_key'] = array( // todo write update from path to pair
+      '#title' => t('Key'),
+      '#type' => 'textfield',
+      '#size' => 12,
+      '#default_value' => variable_get('purl_method_pair_key', ''),
+    );
+  }
+
   public function parse($valid_values, $q) {
     $parsed = array();
     $args = explode('/', $q);

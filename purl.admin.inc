@@ -58,9 +58,7 @@ function purl_admin() {
  * Settings form for choosing the operating mode of purl
  */
 function purl_settings_form() {
-  global $base_url;
   $form = array();
-
   $options = _purl_options();
 
   foreach (purl_providers() as $id => $provider) {
@@ -87,25 +85,11 @@ function purl_settings_form() {
       '#options' => $provider_options,
       '#default_value' => variable_get('purl_method_'. $id, PURL_PATH),
     );
-    $form[$id]['purl_method_'. $id .'_key'] = array(
-      '#title' => t('Key'),
-      '#type' => 'textfield',
-      '#size' => 12,
-      '#default_value' => variable_get('purl_method_'. $id .'_key', ''),
-    );
-  }
 
-  if (!empty($options[PURL_DOMAIN]) || !empty($options[PURL_SUBDOMAIN])) {
-    $form['purl_location'] = array(
-      '#type' => 'fieldset',
-    );
-    $form['purl_location']['purl_base_domain'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Default domain'),
-      '#description' => t('Enter the default domain if you are using domain modifiers.'),
-      '#required' => FALSE,
-      '#default_value' => variable_get('purl_base_domain', $base_url),
-    );
+    // Allow processors to alter the form.
+    foreach ($provider_options as $k =>$ $v) {
+      purl_get_processor($k)->admin_form($form, $id);
+    }
   }
 
   $form = system_settings_form($form);
@@ -128,12 +112,16 @@ function theme_purl_settings_form($form) {
       unset($form[$id]['#description']);
       $row[] = "<strong>$name</strong><div class='description'>$description</div>";
 
-      $cell = '';
+      $cell = $extra = '';
       foreach (element_children($form[$id]) as $item) {
         unset($form[$id][$item]['#title']);
+	if ($item == 'extra') {
+	  $extra = drupal_render($form[$id][$item]); 
+	}
         $cell .= drupal_render($form[$id][$item]);
       }
       $row[] = $cell;
+      $row[] = $extra;
     }
     $rows[] = $row;
   }
