@@ -578,7 +578,7 @@ function purl_form($provider, $id, $value = '') {
     '#maxlength' => 255,
     '#required' => TRUE,
     '#default_value' => $value,
-    '#field_prefix' => $method == 'purl' ? $base_url .'/' : NULL,
+    '#field_prefix' => $method == 'path' ? $base_url .'/' : NULL,
   );
   $form['provider'] = array(
     '#type' => 'value',
