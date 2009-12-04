@@ -317,7 +317,7 @@ function purl_modifiers($requested_method) {
       $method = variable_get('purl_method_'. $provider, 'path');
       // Don't load all data base values for keyed pairs.
       $info = ctools_get_plugins('purl', 'processor', $method);
-      if ($info['null_id']) {
+      if (!empty($info['null_id'])) {
         $value = variable_get('purl_method_'. $provider .'_key', false);
         if ($value != false) {
           $values[$method][$value] = array(
