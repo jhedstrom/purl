@@ -115,9 +115,9 @@ function theme_purl_settings_form($form) {
       $cell = $extra = '';
       foreach (element_children($form[$id]) as $item) {
         unset($form[$id][$item]['#title']);
-	if ($item == 'extra') {
-	  $extra = drupal_render($form[$id][$item]);
-	}
+        if ($item == 'extra') {
+          $extra = drupal_render($form[$id][$item]);
+        }
         $cell .= drupal_render($form[$id][$item]);
       }
       $row[] = $cell;
