@@ -223,7 +223,7 @@ function purl_url_rewrite(&$path, &$options, $original) {
 
 /**
  * Generate a purl_path_element for provider
- * 
+ *
  * @param $item
  *   An array with the keys: "provider" & "id"
  *
@@ -416,7 +416,7 @@ function purl_load($modifier) {
         return $modifier;
       }
     }
-    else if ($modifier['value']) {
+    else if (!empty($modifier['value'])) {
       $modifier = db_fetch_array(db_query("SELECT * FROM {purl} WHERE value = '%s' AND provider = '%s'", $modifier['value'], $modifier['provider']));
       if ($modifier) {
         return $modifier;
@@ -464,11 +464,11 @@ function purl_save($modifier) {
  * Delete a modifier entry from the database.
  */
 function purl_delete($modifier) {
-  if ($modifier['value']) {
+  if (!empty($modifier['value'])) {
     $param = 'value';
     $where = $modifier['value'];
   }
-  else if ($modifier['id']) {
+  else if (!empty($modifier['id'])) {
     $param = 'id';
     $where = $modifier['id'];
   }
@@ -571,7 +571,7 @@ function purl_form($provider, $id, $value = '') {
 
   global $base_url;
   $form['value'] = array(
-    '#title' => $processors[$method],
+    '#title' => isset($processors[$method]) ? $processors[$method] : '',
     '#type' => 'textfield',
     '#description' => $processor->description(),
     '#size' => 20,
@@ -753,7 +753,7 @@ class purl_cache {
 function purl_get_processor($method) {
   module_load_include('inc', 'purl', 'includes/purl_processor');
   ctools_include('plugins');
-  $class = ctools_plugin_load_class('purl', 'processor', $method, 'handler'); 
+  $class = ctools_plugin_load_class('purl', 'processor', $method, 'handler');
   return new $class();
 }
 

@@ -35,7 +35,7 @@ function purl_admin() {
       $providers[$merged[$i]['provider']]['name'],
       $merged[$i]['value'],
       $merged[$i]['id'],
-      $methods[variable_get('purl_method_'. $merged[$i]['provider'], PURL_PATH)],
+      $methods[variable_get('purl_method_'. $merged[$i]['provider'], 'path')],
     );
   }
 
@@ -83,7 +83,7 @@ function purl_settings_form() {
       '#title' => t('Method'),
       '#type' => 'select',
       '#options' => $provider_options,
-      '#default_value' => variable_get('purl_method_'. $id, PURL_PATH),
+      '#default_value' => variable_get('purl_method_'. $id, 'path'),
     );
 
     // Allow processors to alter the form.
@@ -116,7 +116,7 @@ function theme_purl_settings_form($form) {
       foreach (element_children($form[$id]) as $item) {
         unset($form[$id][$item]['#title']);
 	if ($item == 'extra') {
-	  $extra = drupal_render($form[$id][$item]); 
+	  $extra = drupal_render($form[$id][$item]);
 	}
         $cell .= drupal_render($form[$id][$item]);
       }
@@ -140,7 +140,7 @@ function purl_types_form() {
     '#type' => 'checkboxes',
     '#title' => t('Types'),
     '#options' => _purl_options(false),
-    '#default_value' => variable_get('purl_types', array(PURL_PATH)),
+    '#default_value' => variable_get('purl_types', array()),
     '#description' => t('Enabled URL modification types.'),
   );
   return system_settings_form($form);
@@ -237,7 +237,7 @@ function _purl_menu_edit_submit_recurse($tree, $behavior) {
 /**
  * Validate handler for menu_edit_item
  *
- * Doesn't actually validate, but rather moves data to where 
+ * Doesn't actually validate, but rather moves data to where
  * menu_edit_item_submit() expects it.
  */
 function purl_item_edit_validate($form, &$form_state) {
