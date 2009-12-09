@@ -87,7 +87,7 @@ function purl_settings_form() {
     );
 
     // Allow processors to alter the form.
-    foreach ($provider_options as $k =>$ $v) {
+    foreach ($provider_options as $k => $v) {
       purl_get_processor($k)->admin_form($form, $id);
     }
   }
