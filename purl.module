@@ -133,12 +133,14 @@ function _purl_init($method) {
 }
 
 /**
- * Check that no one else has implemented the custom_url_rewrite function --
- * if available, use PURL.
+ * Will define custom_url_rewrite_outbound(). If url_alter is enabled
+ * (it has weight -1000) PURL's outbound alter will be called by its
+ * implementation of custom_url_rewrite_outbound() instead.
+ * 
  */
 if (!function_exists('custom_url_rewrite_outbound')) {
   function custom_url_rewrite_outbound(&$path, &$options, $original) {
-    return purl_url_rewrite($path, $options, $original);
+    return purl_url_outbound_alter($path, $options, $original);
   }
 }
 
@@ -160,6 +162,8 @@ function _purl_get_normal_path($path) {
 }
 
 /**
+ * Implementation of hook_url_alter_outbound().
+ *
  * Rewrites path with the current modifier and removes the modifier if
  * searching for source path.
  *
@@ -180,7 +184,7 @@ function _purl_get_normal_path($path) {
  *    the link.
  *
  */
-function purl_url_rewrite(&$path, &$options, $original) {
+function purl_url_outbound_alter(&$path, &$options, $original) {
   static $global_elements;
 
   // Check to see whether url rewriting has been disabled or isn't
