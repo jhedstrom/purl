@@ -11,11 +11,16 @@ class purl_querystring implements purl_processor {
   }
 
   public function admin_form(&$form, $id) {
-    $form[$id]['extra']['purl_method_querystring_key'] = array(
+    // Note that while this form element's key includes the method ("pair"),
+    // it will eventually save to the variable purl_method_[id]_key. See
+    // element validator for how this occurs.
+    $form[$id]['extra']["purl_method_querystring_{$id}_key"] = array(
       '#title' => t('Key'),
       '#type' => 'textfield',
       '#size' => 12,
-      '#default_value' => variable_get('purl_method_querystring_key', ''),
+      '#default_value' => variable_get("purl_method_{$id}_key", ''),
+      '#element_validate' => array('purl_admin_form_key_validate'),
+      '#provider_id' => $id,
     );
   }
 

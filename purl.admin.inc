@@ -98,6 +98,22 @@ function purl_settings_form() {
 }
 
 /**
+ * Validate a key element and move its value to the correct key if validated.
+ */
+function purl_admin_form_key_validate(&$element, &$form_state) {
+  // Check for string identifier sanity
+  if (!empty($element['#value'])) {
+    if (!preg_match('!^[A-Za-z0-9_-]+$!', $element['#value'])) {
+      form_set_error($element['#name'], t('The key may only consist of letters, numbers, dashes and underscores.'));
+    }
+    else {
+      $form_state['values']["purl_method_{$element['#provider_id']}_key"] = $element['#value'];
+    }
+  }
+  unset($form_state['values'][$element['#name']]);
+}
+
+/**
  * Theme function for purl_settings_form()
  */
 function theme_purl_settings_form($form) {
