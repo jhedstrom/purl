@@ -54,17 +54,17 @@ class PURLUnitTestCase extends DrupalWebTestCase {
 
     $output = $this->drupalGet('admin/build/testing/purl');
     $this->assertNoText('PURL test ID', t('@test: Modifier not present.', array('@test' => $testname)));
-    $this->assertText('Rewrite: /demo/node', t('@test: Link not rewritten.', array('@test' => $testname)));
-    $this->assertText('Disable providers: /demo/node', t('@test: Provider disabled.', array('@test' => $testname)));
-    $this->assertText('Remove provider: /demo/node', t('@test: Provider removed.', array('@test' => $testname)));
-    $this->assertText('Add provider: /demo/sweden/node', t('@test: Provider added.', array('@test' => $testname)));
+    $this->assertText('Rewrite: /node', t('@test: Link not rewritten.', array('@test' => $testname)));
+    $this->assertText('Disable providers: /node', t('@test: Provider disabled.', array('@test' => $testname)));
+    $this->assertText('Remove provider: /node', t('@test: Provider removed.', array('@test' => $testname)));
+    $this->assertText('Add provider: /sweden/node', t('@test: Provider added.', array('@test' => $testname)));
 
     $output = $this->drupalGet('foo/admin/build/testing/purl');
     $this->assertText('PURL test ID: foo', t('@test: Modifier parsed.', array('@test' => $testname)));
-    $this->assertText('Rewrite: /demo/foo/node', t('@test: Link rewritten.', array('@test' => $testname)));
-    $this->assertText('Disable providers: /demo/node', t('@test: Provider disabled.', array('@test' => $testname)));
-    $this->assertText('Remove provider: /demo/node', t('@test: Provider removed.', array('@test' => $testname)));
-    $this->assertText('Add provider: /demo/sweden/foo/node', t('@test: Provider added.', array('@test' => $testname)));
+    $this->assertText('Rewrite: /foo/node', t('@test: Link rewritten.', array('@test' => $testname)));
+    $this->assertText('Disable providers: /node', t('@test: Provider disabled.', array('@test' => $testname)));
+    $this->assertText('Remove provider: /node', t('@test: Provider removed.', array('@test' => $testname)));
+    $this->assertText('Add provider: /sweden/foo/node', t('@test: Provider added.', array('@test' => $testname)));
 
     // Test path + pair.
     variable_set('purl_method_purl_alt', 'pair');
@@ -73,17 +73,17 @@ class PURLUnitTestCase extends DrupalWebTestCase {
 
     $output = $this->drupalGet('admin/build/testing/purl');
     $this->assertNoText('PURL test ID', t('@test: Modifier not present.', array('@test' => $testname)));
-    $this->assertText('Rewrite: /demo/node', t('@test: Link not rewritten.', array('@test' => $testname)));
-    $this->assertText('Disable providers: /demo/node', t('@test: Provider disabled.', array('@test' => $testname)));
-    $this->assertText('Remove provider: /demo/node', t('@test: Provider removed.', array('@test' => $testname)));
-    $this->assertText('Add provider: /demo/altkey/sweden/node', t('@test: Provider added.', array('@test' => $testname)));
+    $this->assertText('Rewrite: /node', t('@test: Link not rewritten.', array('@test' => $testname)));
+    $this->assertText('Disable providers: /node', t('@test: Provider disabled.', array('@test' => $testname)));
+    $this->assertText('Remove provider: /node', t('@test: Provider removed.', array('@test' => $testname)));
+    $this->assertText('Add provider: /altkey/sweden/node', t('@test: Provider added.', array('@test' => $testname)));
 
     $output = $this->drupalGet('foo/admin/build/testing/purl');
     $this->assertText('PURL test ID: foo', t('@test: Modifier parsed.', array('@test' => $testname)));
-    $this->assertText('Rewrite: /demo/foo/node', t('@test: Link rewritten.', array('@test' => $testname)));
-    $this->assertText('Disable providers: /demo/node', t('@test: Provider disabled.', array('@test' => $testname)));
-    $this->assertText('Remove provider: /demo/node', t('@test: Provider removed.', array('@test' => $testname)));
-    $this->assertText('Add provider: /demo/altkey/sweden/foo/node', t('@test: Provider added.', array('@test' => $testname)));
+    $this->assertText('Rewrite: /foo/node', t('@test: Link rewritten.', array('@test' => $testname)));
+    $this->assertText('Disable providers: /node', t('@test: Provider disabled.', array('@test' => $testname)));
+    $this->assertText('Remove provider: /node', t('@test: Provider removed.', array('@test' => $testname)));
+    $this->assertText('Add provider: /altkey/sweden/foo/node', t('@test: Provider added.', array('@test' => $testname)));
 
     // Test path + querystring.
     variable_set('purl_method_purl_alt', 'querystring');
@@ -92,16 +92,16 @@ class PURLUnitTestCase extends DrupalWebTestCase {
 
     $output = $this->drupalGet('admin/build/testing/purl');
     $this->assertNoText('PURL test ID', t('@test: Modifier not present.', array('@test' => $testname)));
-    $this->assertText('Rewrite: /demo/node', t('@test: Link not rewritten.', array('@test' => $testname)));
-    $this->assertText('Disable providers: /demo/node', t('@test: Provider disabled.', array('@test' => $testname)));
-    $this->assertText('Remove provider: /demo/node', t('@test: Provider removed.', array('@test' => $testname)));
-    $this->assertText('Add provider: /demo/node?altkey=sweden', t('@test: Provider added.', array('@test' => $testname)));
+    $this->assertText('Rewrite: /node', t('@test: Link not rewritten.', array('@test' => $testname)));
+    $this->assertText('Disable providers: /node', t('@test: Provider disabled.', array('@test' => $testname)));
+    $this->assertText('Remove provider: /node', t('@test: Provider removed.', array('@test' => $testname)));
+    $this->assertText('Add provider: /node?altkey=sweden', t('@test: Provider added.', array('@test' => $testname)));
 
     $output = $this->drupalGet('foo/admin/build/testing/purl');
     $this->assertText('PURL test ID: foo', t('@test: Modifier parsed.', array('@test' => $testname)));
-    $this->assertText('Rewrite: /demo/foo/node', t('@test: Link rewritten.', array('@test' => $testname)));
-    $this->assertText('Disable providers: /demo/node', t('@test: Provider disabled.', array('@test' => $testname)));
-    $this->assertText('Remove provider: /demo/node', t('@test: Provider removed.', array('@test' => $testname)));
-    $this->assertText('Add provider: /demo/foo/node?altkey=sweden', t('@test: Provider added.', array('@test' => $testname)));
+    $this->assertText('Rewrite: /foo/node', t('@test: Link rewritten.', array('@test' => $testname)));
+    $this->assertText('Disable providers: /node', t('@test: Provider disabled.', array('@test' => $testname)));
+    $this->assertText('Remove provider: /node', t('@test: Provider removed.', array('@test' => $testname)));
+    $this->assertText('Add provider: /foo/node?altkey=sweden', t('@test: Provider added.', array('@test' => $testname)));
   }
 }

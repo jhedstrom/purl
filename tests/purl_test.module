@@ -21,11 +21,22 @@ function purl_test_menu() {
  */
 function purl_test_page() {
   $tests = array();
-  $tests[] = t('Rewrite: !link', array('!link' => url('node')));
-  $tests[] = t('Disable providers: !link', array('!link' => url('node', array('purl' => array('disabled' => TRUE)))));
-  $tests[] = t('Remove provider: !link', array('!link' => url('node', array('purl' => array('remove' => array('purl_test'))))));
-  $tests[] = t('Add provider: !link', array('!link' => url('node', array('purl' => array('add' => array(array('provider' => 'purl_alt', 'id' => 'sweden')))))));
+  $tests[] = t('Rewrite: !link', array('!link' => purl_test_remove_base_path(url('node'))));
+  $tests[] = t('Disable providers: !link', array('!link' => purl_test_remove_base_path(url('node', array('purl' => array('disabled' => TRUE))))));
+  $tests[] = t('Remove provider: !link', array('!link' => purl_test_remove_base_path(url('node', array('purl' => array('remove' => array('purl_test')))))));
+  $tests[] = t('Add provider: !link', array('!link' => purl_test_remove_base_path(url('node', array('purl' => array('add' => array(array('provider' => 'purl_alt', 'id' => 'sweden'))))))));
   return implode('<br/>', $tests);
+}
+
+/**
+ * Helper function to remove $base_path from testing links.
+ */
+function purl_test_remove_base_path($link) {
+  global $base_path;
+  if ($base_path != '/') {
+    return substr($link, strlen($base_path) - 1);
+  }
+  return $link;
 }
 
 /**
