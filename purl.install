@@ -94,5 +94,11 @@ function purl_update_6001() {
  */
 function purl_update_6002() {
   drupal_install_modules(array('ctools'));
+  $modules = module_list();
+  if (!isset($modules['ctools'])) {
+    return array(
+      '#abort' => array('sucess' => FALSE, 'query' => 'Could not enable ctools.'),
+    );
+  }
   return array();
 }
