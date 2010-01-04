@@ -28,7 +28,7 @@ class purl_querystring implements purl_processor {
    * Detect a default value for in the GET request, ignore elements drupal uses
    * already.
    */
-  public function detect() {
+  public function detect($q) {
     return drupal_query_string_encode($_GET, array('q', 'sort', 'order', 'page', 'pass'));
   }
 
@@ -56,7 +56,7 @@ class purl_querystring implements purl_processor {
   /**
    * No need to do nothing at all.
    */
-  public function adjust(&$q, $item) {}
+  public function adjust(&$value, $item, &$q) {}
 
   /**
    * Removes specific modifier from a query string.

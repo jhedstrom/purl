@@ -19,7 +19,7 @@ class purl_domain implements purl_processor {
     );
   }
 
-  function detect() {
+  function detect($q) {
     return str_replace('http://','',$_SERVER['HTTP_HOST']);
   }
 
@@ -42,7 +42,7 @@ class purl_domain implements purl_processor {
     return purl_path_elements($this, $parsed);
   }
 
-  public function adjust(&$value, $item) { return; }
+  public function adjust(&$value, $item, &$q) { return; }
 
   /**
    * Either force the url, or set it back to the base.

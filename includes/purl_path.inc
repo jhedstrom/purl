@@ -15,8 +15,8 @@ class purl_path implements purl_processor {
   /**
    * Detect a default value for 'q' when created.
    */
-  public function detect() {
-    return isset($_REQUEST["q"]) ? trim($_REQUEST["q"], "/") : '';
+  public function detect($q) {
+    return $q;
   }
 
   public function description() {
@@ -45,17 +45,15 @@ class purl_path implements purl_processor {
    * if $_GET and $_REQUEST are different, the path has NOT been
    * aliased. We may need to rewrite the path.
    */
-  public function adjust(&$q, $item) {
-    if ($_GET['q'] == trim($_REQUEST['q'], '/')) {
-      $q = $this->remove($q, $item);
-      // there is nothing beyond the path value -- treat as frontpage
-      if ($q == '') {
-        $_GET['q'] = variable_get('site_frontpage', 'node');
-      }
-      // pass the rest of the path onto Drupal cleanly
-      else {
-        $q = $_REQUEST['q'] = $_GET['q'] = _purl_get_normal_path($q);
-      }
+  public function adjust(&$value, $item, &$q) {
+    $value = $this->remove($value, $item);
+    // there is nothing beyond the path value -- treat as frontpage
+    if ($value == '') {
+      $q = variable_get('site_frontpage', 'node');
+    }
+    // pass the rest of the path onto Drupal cleanly
+    else {
+      $value = $q = _purl_get_normal_path($value);
     }
   }
 

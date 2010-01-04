@@ -85,14 +85,15 @@ function purl_form_alter(&$form, &$form_state, $form_id) {
   }
 }
 
-
 /**
  * Implementation of hook_init()
  * Checks for any valid persistent urls in request string and fire callback appropriately
  */
 function purl_init() {
   static $once;
-  if (!$once) {
+  if (!isset($once)) {
+    $once = TRUE;
+
     // Initialize a few things so that we can use them without warnings.
     if (!isset($_GET['q'])) {
       $_GET['q'] = '';
@@ -101,33 +102,83 @@ function purl_init() {
       $_REQUEST['q'] = '';
     }
 
-    foreach(_purl_options() as $k => $v) {
-      _purl_init($k);
+    // Initialize the PURL path modification stack.
+    purl_inited(TRUE);
+    if (!empty($_REQUEST['q'])) {
+      $_GET['q'] = drupal_get_normal_path(trim($_REQUEST['q'], '/'));
     }
-    $once = true;
+    else {
+      $_GET['q'] = drupal_get_normal_path(variable_get('site_frontpage', 'node'));
+    }
   }
 }
 
 /**
- * Helper function to initialize.
- *
- * @param $method
- *   A string identifier of a purl type/method
+ * Static cache that determines whether the PURL path init has been called.
  */
-function _purl_init($method) {
-  $processor = purl_get_processor($method);
-  $value = $processor->detect();
+function purl_inited($set = NULL) {
+  static $status = FALSE;
+  if (isset($set)) {
+    $status = $set;
+  }
+  return $status;
+}
 
-  // Parse and cache.
-  $parsed = purl_parse($processor, $value);
+/**
+ * Will define custom_url_rewrite_inbound(). If url_alter is enabled
+ * (it has weight -1000) PURL's inbound alter will be called by its
+ * implementation of custom_url_rewrite_inbound() instead.
+ *
+ */
+if (!function_exists('custom_url_rewrite_inbound')) {
+  function custom_url_rewrite_inbound(&$result, $path, $path_language) {
+    return purl_url_inbound_alter($result, $path, $path_language);
+  }
+}
 
-  if (is_array($parsed)) {
-    foreach ($parsed as $element) {
-      // Allow adjustment of page request globals.
-      $processor->adjust($value, $element);
+/**
+ * Implementation of hook_url_alter_inbound().
+ * Rewrites an incoming drupal path (&$result) removing PURL modifiers.
+ */
+function purl_url_inbound_alter(&$result, $path, $path_language) {
+  if (purl_inited()) {
+    static $activated = array();
+    $processors = array();
+    $parsed = array();
+    $values = array();
 
-      // Let active modifiers do their thing.
-      purl_active()->add($method, $element)->set($element);
+    // First detect all modifiers, parse them into their respective
+    // provider values and activate them if necessary.
+    foreach (array_keys(_purl_options()) as $method) {
+      $processor = purl_get_processor($method);
+
+      // Pass the requested Drupal query string for modifier detection.
+      // Processors that don't use/affect the query string can access
+      // the $_REQUEST or $_GET objects directly.
+      $value = $processor->detect($result);
+      $elements = purl_parse($processor, $value);
+
+      if (is_array($elements)) {
+        $processors[$method] = $processor;
+        $parsed[$method] = $elements;
+        $values[$method] = $value;
+
+        // Only cache current request values as active and call PURL
+        // provider callbacks once for each method.
+        if (!isset($activated[$method])) {
+          $activated[$method] = TRUE;
+          foreach ($elements as $element) {
+            purl_active()->add($method, $element)->set($element);
+          }
+        }
+      }
+    }
+
+    // Allow adjustment of page request globals.
+    foreach ($processors as $method => $processor) {
+      foreach ($parsed[$method] as $element) {
+        $processor->adjust($values[$method], $element, $result);
+      }
     }
   }
 }
@@ -755,10 +806,14 @@ class purl_cache {
  * Factory function to ease instantiation of processor classes.
  */
 function purl_get_processor($method) {
-  module_load_include('inc', 'purl', 'includes/purl_processor');
-  ctools_include('plugins');
-  $class = ctools_plugin_load_class('purl', 'processor', $method, 'handler');
-  return new $class();
+  static $processors;
+  if (!isset($processors[$method])) {
+    module_load_include('inc', 'purl', 'includes/purl_processor');
+    ctools_include('plugins');
+    $class = ctools_plugin_load_class('purl', 'processor', $method, 'handler');
+    $processors[$method] = new $class();
+  }
+  return isset($processors[$method]) ? $processors[$method] : NULL;
 }
 
 /**

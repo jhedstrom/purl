@@ -8,8 +8,7 @@ class purl_extension implements purl_processor {
 
   public function admin_form(&$form, $id) { }
 
-  public function detect(){
-    $q = isset($_REQUEST["q"]) ? trim($_REQUEST["q"], "/") : '';
+  public function detect($q) {
     $last = explode('.', array_pop(explode('/', $q)));
     if (count($last) > 1) {
       return array_pop($last);
@@ -38,7 +37,7 @@ class purl_extension implements purl_processor {
    * if $_GET and $_REQUEST are different, the path has NOT been
    * aliased. We may need to rewrite the path.
    */
-  public function adjust(&$value, $item) {
+  public function adjust(&$value, $item, &$q) {
     if ($_GET['q'] == trim($_REQUEST['q'], '/')) {
       $q = $this->remove($_GET['q'], $item);
       // pass the rest of the path onto Drupal cleanly

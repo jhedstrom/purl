@@ -30,7 +30,7 @@ interface purl_processor {
    *
    * @return value that can be pased to the parse step.
    */
-  public function detect();
+  public function detect($q);
 
   /**
    * Detects processor in the passed 'value'.
@@ -49,8 +49,12 @@ interface purl_processor {
    *   themselves is a method can have more than on value.
    * @param $element.
    *   purl_path_element
+   * @param $q.
+   *   the Drupal path being modified by custom_url_rewrite_inbound().
+   *   Processors modifying $_GET['q'] should modify this instead of
+   *   altering the $_GET or $_REQUEST values directly.
    */
-  public function adjust(&$value, $element);
+  public function adjust(&$value, $element, &$q);
 
   /**
    * Responsible for rewriting outgoing links. Note: it's this functions

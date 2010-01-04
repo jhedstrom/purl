@@ -15,7 +15,7 @@ class purl_useragent implements purl_processor {
     return t('Enter a user agent for this context, such as "iPhone".');
   }
 
-  public function detect() {
+  public function detect($q) {
     $useragent = $_SERVER['HTTP_USER_AGENT'];
     if (!empty($useragent)) {
       return $useragent;
@@ -38,6 +38,6 @@ class purl_useragent implements purl_processor {
   /**
    * We cannot alter the user agent, no need to try.
    */
-  public function adjust(&$value, $element) {}
+  public function adjust(&$value, $element, &$q) {}
   public function rewrite(&$path, &$options, $element) {}
 }

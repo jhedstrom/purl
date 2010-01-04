@@ -19,7 +19,7 @@ class purl_subdomain implements purl_processor {
     );
   }
 
-  function detect() {
+  function detect($q) {
     $parts = explode('.', str_replace('http://','',$_SERVER['HTTP_HOST']));
     return array_shift($parts);
   }
@@ -40,7 +40,7 @@ class purl_subdomain implements purl_processor {
     return purl_path_elements($this, $parsed);
   }
 
-  public function adjust(&$value, $item) { return; }
+  public function adjust(&$value, $item, &$q) { return; }
 
   public function rewrite(&$path, &$options, $element) {
     $options['absolute'] = TRUE;
