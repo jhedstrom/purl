@@ -42,19 +42,14 @@ class purl_path implements purl_processor {
   }
 
   /**
-   * if $_GET and $_REQUEST are different, the path has NOT been
-   * aliased. We may need to rewrite the path.
+   * Rewrite the query string. Note that this is being passed through
+   * the custom_url_rewrite_inbound() stack and may *not* directly
+   * affect $_GET['q']. See purl_init() for how $_GET['q'] is affected
+   * by processors.
    */
   public function adjust(&$value, $item, &$q) {
+    $q = $this->remove($q, $item);
     $value = $this->remove($value, $item);
-    // there is nothing beyond the path value -- treat as frontpage
-    if ($value == '') {
-      $q = variable_get('site_frontpage', 'node');
-    }
-    // pass the rest of the path onto Drupal cleanly
-    else {
-      $value = $q = _purl_get_normal_path($value);
-    }
   }
 
   /**

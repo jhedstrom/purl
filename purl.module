@@ -104,12 +104,9 @@ function purl_init() {
 
     // Initialize the PURL path modification stack.
     purl_inited(TRUE);
-    if (!empty($_REQUEST['q'])) {
-      $_GET['q'] = drupal_get_normal_path(trim($_REQUEST['q'], '/'));
-    }
-    else {
-      $_GET['q'] = drupal_get_normal_path(variable_get('site_frontpage', 'node'));
-    }
+    $_GET['q'] = $_REQUEST['q'];
+    drupal_init_path();
+    purl_get_normal_path($_REQUEST['q'], TRUE);
   }
 }
 
@@ -141,46 +138,78 @@ if (!function_exists('custom_url_rewrite_inbound')) {
  * Rewrites an incoming drupal path (&$result) removing PURL modifiers.
  */
 function purl_url_inbound_alter(&$result, $path, $path_language) {
-  if (purl_inited()) {
-    static $activated = array();
-    $processors = array();
-    $parsed = array();
-    $values = array();
+  $result = purl_inited() ? purl_get_normal_path($result) : $result;
+}
 
-    // First detect all modifiers, parse them into their respective
-    // provider values and activate them if necessary.
+/**
+ * Process a query string into its respective processors and modifiers and
+ * return the adjusted query string. If true, the $activate argument is used
+ * to call provider callbacks for a given query string. All values are static
+ * cached for a given query string so that request adjustment and provider
+ * activation can be separated into distinct steps.
+ */
+function purl_get_normal_path($q, $activate = FALSE, $reset = FALSE) {
+  static $cache = array();
+  static $adjusted = array();
+  if (!isset($cache[$q]) || $reset) {
+    $cache[$q] = array();
+    $adjusted[$q] = $q;
+    // Detect all modifiers, parse them into their respective provider values
+    // and activate them if necessary.
     foreach (array_keys(_purl_options()) as $method) {
       $processor = purl_get_processor($method);
 
       // Pass the requested Drupal query string for modifier detection.
       // Processors that don't use/affect the query string can access
       // the $_REQUEST or $_GET objects directly.
-      $value = $processor->detect($result);
+      $value = $processor->detect($adjusted[$q]);
       $elements = purl_parse($processor, $value);
 
+      // Allow adjustment of page request globals.
       if (is_array($elements)) {
-        $processors[$method] = $processor;
-        $parsed[$method] = $elements;
-        $values[$method] = $value;
-
-        // Only cache current request values as active and call PURL
-        // provider callbacks once for each method.
-        if (!isset($activated[$method])) {
-          $activated[$method] = TRUE;
-          foreach ($elements as $element) {
-            purl_active()->add($method, $element)->set($element);
-          }
+        foreach ($elements as $element) {
+          $processor->adjust($value, $element, $adjusted[$q]);
         }
-      }
-    }
-
-    // Allow adjustment of page request globals.
-    foreach ($processors as $method => $processor) {
-      foreach ($parsed[$method] as $element) {
-        $processor->adjust($values[$method], $element, $result);
+        $cache[$q][$method] = $elements;
       }
     }
   }
+  // If the activate flag has been thrown, activate provider callbacks.
+  if ($activate) {
+    foreach ($cache[$q] as $method => $elements) {
+      foreach ($elements as $element) {
+        purl_active()->add($method, $element)->set($element);
+      }
+    }
+  }
+  // If at the end of all this the adjusted query string is empty, use the
+  // site frontpage.
+  return !empty($adjusted[$q]) ? $adjusted[$q] : variable_get('site_frontpage', 'node');
+}
+
+/**
+ * Parses a query string of various types (url, domain, etc.) and
+ * returns an array of any found values and their respective
+ * providers/id values.
+ *
+ * @param $processor
+ *   Object that implements purl_processor
+ * @param $q
+ *   The value being parsed.
+ * @return
+ *   The contents of the cache.
+ */
+function purl_parse($processor, $q) {
+  static $cache;
+  if (!isset($cache)) {
+    $cache = new purl_cache();
+  }
+  if ($cache->get($processor->method(), $q) === false) {
+    $valid_values = purl_modifiers($processor->method());
+    $item = $processor->parse($valid_values, $q);
+    $cache->add($processor->method(), array($q => $item));
+  }
+  return $cache->get($processor->method(), $q);
 }
 
 /**
@@ -192,23 +221,6 @@ function purl_url_inbound_alter(&$result, $path, $path_language) {
 if (!function_exists('custom_url_rewrite_outbound')) {
   function custom_url_rewrite_outbound(&$path, &$options, $original) {
     return purl_url_outbound_alter($path, $options, $original);
-  }
-}
-
-/**
- * Taken from i18n
- */
-function _purl_get_normal_path($path) {
-  // If bootstrap, drupal_lookup_path is not defined
-  if (!function_exists('drupal_get_headers')) {
-    return $path;
-  }
-  // Check alias without lang
-  elseif ($alias = drupal_lookup_path('source', $path)) {
-    return $alias;
-  }
-  else {
-    return $path;
   }
 }
 
@@ -394,31 +406,6 @@ function purl_modifiers($requested_method) {
   }
 
   return (isset($values[$requested_method]) ? $values[$requested_method] : array());
-}
-
-/**
- * Parses a query string of various types (url, domain, etc.) and
- * returns an array of any found values and their respective
- * providers/id values.
- *
- * @param $processor
- *   Object that implements purl_processor
- * @param $q
- *   The value being parsed.
- * @return
- *   The contents of the cache.
- */
-function purl_parse($processor, $q) {
-  static $cache;
-  if (!isset($cache)) {
-    $cache = new purl_cache();
-  }
-  if ($cache->get($processor->method(), $q) === false) {
-    $valid_values = purl_modifiers($processor->method());
-    $item = $processor->parse($valid_values, $q);
-    $cache->add($processor->method(), array($q => $item));
-  }
-  return $cache->get($processor->method(), $q);
 }
 
 /**
