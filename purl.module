@@ -104,10 +104,36 @@ function purl_init() {
 
     // Initialize the PURL path modification stack.
     purl_inited(TRUE);
-    $_GET['q'] = $_REQUEST['q'];
+    $_GET['q'] = $q = purl_language_strip($_REQUEST['q']);
     drupal_init_path();
-    purl_get_normal_path($_REQUEST['q'], TRUE);
+    purl_get_normal_path($q, TRUE);
   }
+}
+
+/**
+ * Remove the language prefix for a given path.
+ * PURL implements this itself as language_initialize() directly affects
+ * $_GET['q'] and cannot be reused.
+ */
+function purl_language_strip($path) {
+  // Configured presentation language mode.
+  $mode = variable_get('language_negotiation', LANGUAGE_NEGOTIATION_NONE);
+
+  // Get a list of enabled languages.
+  $languages = language_list('enabled');
+  $languages = $languages[1];
+
+  if (in_array($mode, array(LANGUAGE_NEGOTIATION_PATH_DEFAULT, LANGUAGE_NEGOTIATION_PATH))) {
+    $args = explode('/', $path);
+    $prefix = array_shift($args);
+    // Search prefix within enabled languages.
+    foreach ($languages as $language) {
+      if (!empty($language->prefix) && $language->prefix == $prefix) {
+        return implode('/', $args);
+      }
+    }
+  }
+  return $path;
 }
 
 /**
