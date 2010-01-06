@@ -210,7 +210,11 @@ function purl_get_normal_path($q, $activate = FALSE, $reset = FALSE) {
   }
   // If at the end of all this the adjusted query string is empty, use the
   // site frontpage.
-  return !empty($adjusted[$q]) ? $adjusted[$q] : variable_get('site_frontpage', 'node');
+  if (!empty($q)) {
+    return !empty($adjusted[$q]) ? $adjusted[$q] : variable_get('site_frontpage', 'node');
+  }
+  // If the actual requested string was empty, we need to leave it alone.
+  return $adjusted[$q];
 }
 
 /**
