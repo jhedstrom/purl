@@ -96,9 +96,7 @@ function purl_update_6002() {
   drupal_install_modules(array('ctools'));
   $modules = module_list();
   if (!isset($modules['ctools'])) {
-    return array(
-      '#abort' => array('success' => FALSE, 'query' => 'Could not enable ctools.'),
-    );
+    return array('#abort' => array('success' => FALSE, 'query' => 'Could not enable CTools.'));
   }
-  return array();
+  return array(array('success' => TRUE, 'query' => 'Enabled CTools successfully.'));
 }
