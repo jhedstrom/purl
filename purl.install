@@ -97,7 +97,7 @@ function purl_update_6002() {
   $modules = module_list();
   if (!isset($modules['ctools'])) {
     return array(
-      '#abort' => array('sucess' => FALSE, 'query' => 'Could not enable ctools.'),
+      '#abort' => array('success' => FALSE, 'query' => 'Could not enable ctools.'),
     );
   }
   return array();
