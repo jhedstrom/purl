@@ -2,82 +2,105 @@ $Id$
 
 Persistent URL for Drupal 6.x
 
+
 Installation
 ------------
-PURL can be installed like any other Drupal module -- place
-it in the modules directory for your site and enable it (and its
-requirement, context) on the admin/build/modules page.
 
-Basic usage
------------
-PURL is an API module -- it is meant to be a helper (and one
-that does some heavy lifting at that!) for other modules interested in
-using path prefixing to sustain information between pages without
-using a SESSION or other hackish means.
+PURL can be installed like any other Drupal module -- place it in the modules
+directory for your site and enable it (and its requirement, context) on the
+admin/build/modules page.
 
-Translation: PURL does absolutely nothing for the end user
-out of the box without other modules that take advantage of its API.
+PURL is an API module. It does absolutely nothing for the end user out of the
+box without other modules that take advantage of its API.
+
+
+Core concepts behind PURL
+-------------------------
+
+The mission of PURL is to provide an API for other modules to manipulate and
+respond to portions of an HTTP request that are not captured by the core
+Drupal menu system. By default, the Drupal menu system reacts to only one part
+of a request: $_GET['q']. PURL aims to be a pluggable system for reacting to
+parts of $GET['q'] but many others as well.
+
+Some parts of a request that a PURL provider may respond to:
+
+  Mozilla    http:// foobar.baz.com / group-a / node/5 ? foo=bar
+    |                   |               |                   |
+    |                   |               |                   |
+  User agent     Subdomain/Domain     Prefix           Query string
+
+Any modules using the PURL API must define one or more providers.
+
+- A provider is a single concept for responding to or modifying a request.
+  Examples: `spaces_og` activates group contexts, `views_modes` sets an active
+  views style plugin, `locale` (if it were to use PURL) would activate the
+  active language.
+
+- A method is the means by which a provider is activated and modifies a
+  request. The parts of the request, like user agent, prefix, query string,
+  etc. are all exapmles of methods.
+
+- A modifier is an id/value pair designated by a provider to trigger a response
+  if found in the provider's method. Often modifiers map string aliases to an
+  id, like ['mygroup', 5] (where 'mygroup' is the group's path and 5 is the
+  group's node id). Other times, there is no reasonable mapping and a provider
+  will want the literal value found in the request. These modifiers simply use
+  the same string for the id and value, e.g. ['mozilla', 'mozilla']. 
+
+One of PURLs goals is to make it possible for providers to be written to be
+independent of the method that it uses. For example, `spaces_og` can activate
+a group space when it finds a group identifier as a path prefix,
+or a subdomain, or a specified query string, etc. depending on the method that
+has been assigned to it by PURL.
+
+The big picture is that PURL allows administrators to assign each provider a
+method, and any time a valid modifier is found in a request for that given
+method the provider is given a chance to respond via a callback function.
+
+Example provider/method setup:
+
++---------------+--------------------------------+----------------------+
+| Provider      | Method                         | Example modifier     |
++---------------+--------------------------------+----------------------+
+| spaces_og     | Path prefix                    | ['mygroup', 5]       |
+| views_modes   | Query string, key: 'viewstyle' | ['list', 'list']     |
+| iphone_custom | Subdomain                      | ['iphone', 'iphone'] |
++---------------+--------------------------------+----------------------+
+
+A sample URL which would trigger *all* of the providers above:
+
+  http://iphone.foobar.com/mygroup/page-listing?viewstyle=list
+
+**Responding**
+
+When a modifier for a provider is found in a request, the provider's registered
+callback is called with the ID for the given modifier. For example, in the
+example above, the callback for provider `spaces_og` will be passed `5`, the id
+corresponding to the `mygroup`, and it is then the provider's job to do whatever
+it wants to do with that information. `spaces_og`, for example, will load node
+`5` and set it as the active group context.
+
+Depending on the method (e.g. any that involve $_GET['q']), PURL may remove the
+modifier for the rest of the page load so that the request is passed cleanly to
+the rest of the Drupal menu stack. While the original request above would have
+had the path `mygroup/page-listing`, PURL will strip `mygroup` leaving the rest
+of Drupal to think that the page's path is `page-listing`.
+
+**Modifying**
+
+Depending on the PURL method, outgoing requests may be automatically rewritten
+to sustain the modifier found in the incoming request. In the example above,
+any paths pushed through `url()` will be given the additional path prefix of
+`mygroup`. Thus all links on the page and even requests like form autocomplete
+AJAX calls will be prefixed.
+
 
 Usage overview
 --------------
-The basic task that PURL fulfills is sustaining some piece of
-information that your module is interested in between page loads. It
-does this by adding this information via a 'prefix' onto all internal
-links on a given page load and then parsing this prefix into something
-usable for your module on subsequent page loads.
 
-Example:
+@TODO
 
-Your user would like to view the spanish version of the site. You
-provide a "Spanish" link at the top of your page which points to
-yoursite.com/es. Once she clicks this link, all urls on the page are
-prefixed with 'es' (e.g. 'es/node/43', 'es/taxonomy/term', even
-'es/admin'). On subsequent page loads, the 'es' prefix is parsed and
-passed on to the Internationalization module so that it knows to
-display the spanish version of your content. The prefix 'es' is hidden
-from all other Drupal modules which continue behaving as if the user is
-visiting a normal Drupal page url ('node/43', 'taxonomy/term', and
-'admin').
-
-API
----
-There are several required integration points for your module before
-you can realistically get some prefixing working.
-
-Overview:
-
-1. Register your module as a prefix provider using
-   hook_purl_provider().
-
-2. Implement some method of providing valid prefixes either by entering
-   them into the database using purl_form() and
-   purl_api() or providing them programatically via
-   hook_purl_modifiers().
-
-3. Implement the reactive behavior you would like in your module's
-   callback described in hook_purl_provider().
-
-The details:
-
-1. Your module registers itself as a prefix provider via
-   hook_purl_provider().
-
-2. Your module allows the user to enter a prefix to associate with a
-   certain organic group (e.g. group nid 43 = 'knitting').
-   NOTE: spaces/spaces_og actually provides this functionality.
-
-3. On hook_init(), purl_init() finds any registered prefixes
-   and fires the associated provider's callback. In our example,
-   PURL would pass to spaces_og's callback nid 43.
-
-4. The provider gets a chance to take some actions via its callback
-   (spaces_og sets the active group context and space to the knitting
-   group).
-
-5. Context_prefix rewrites all url's on the page to contain the
-   'knitting' prefix.
-   NOTE: certain links can be excluded from prefixing by using the
-   'disabled' parameter in the $options array passed to l().
 
 Maintainers
 -----------
