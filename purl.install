@@ -7,6 +7,9 @@
 function purl_install() {
   drupal_install_schema('purl');
   db_query("UPDATE {system} SET weight = -20 WHERE name = 'purl'");
+
+  // Migrate context_prefix table if present.
+  _purl_migrate();
 }
 
 /**
@@ -52,28 +55,25 @@ function purl_schema() {
 }
 
 /**
- * Implementation of hook_enable().
- */
-function purl_enable() {
-  $count = db_result(db_query("SELECT count(*) FROM {purl}"));
-  if (db_table_exists('context_prefix') && empty($count)) {
-    _purl_migrate();
-  }
-}
-
-/**
  * Migrate any modifiers from context_prefix tables to PURL.
  */
 function _purl_migrate() {
   drupal_get_schema(NULL, TRUE);
-  $result = db_query("SELECT * FROM {context_prefix}");
-  while ($row = db_fetch_object($result)) {
-    $modifier = array(
-      'value' => $row->prefix,
-      'provider' => $row->provider,
-      'id' => $row->id,
-    );
-    drupal_write_record('purl', $modifier);
+  if (db_table_exists('purl') && db_table_exists('context_prefix')) {
+    $result = db_query("SELECT * FROM {context_prefix}");
+    while ($row = db_fetch_object($result)) {
+      $exists = db_result(db_query("SELECT id FROM {purl} WHERE provider = '%s' AND id = '%d'", $row->provider, $row->id));
+      if (!$exists) {
+        $modifier = array(
+          'value' => $row->prefix,
+          'provider' => $row->provider,
+          'id' => $row->id,
+        );
+        drupal_write_record('purl', $modifier);
+      }
+    }
+    $ret = array();
+    db_drop_table($ret, 'context_prefix');
   }
 }
 
