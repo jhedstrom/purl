@@ -415,10 +415,20 @@ function purl_modifiers($requested_method) {
     // already collected values for through code.
     $providers = array_diff_key(purl_providers(), $providers);
 
+    // Pull in all modifiers stored in the DB.
+    $result = db_query("SELECT * FROM {purl}");
+    $db_values = array();
+    while ($row = db_fetch_object($result)) {
+      $db_values[$row->provider][$row->value] = array(
+        'provider' => $row->provider,
+        'id' => $row->id,
+      );
+    }
+
     foreach ($providers as $provider => $info) {
       $method = variable_get('purl_method_'. $provider, 'path');
-      // Don't load all data base values for keyed pairs.
       $info = ctools_get_plugins('purl', 'processor', $method);
+      // Don't load all data base values for keyed pairs.
       if (!empty($info['null_id'])) {
         $value = variable_get('purl_method_'. $provider .'_key', false);
         if ($value != false) {
@@ -428,14 +438,10 @@ function purl_modifiers($requested_method) {
           );
         }
       }
+      // Otherwise, use any DB values for this provider.
       else {
-        $result = db_query("SELECT * FROM {purl} WHERE provider = '%s'", $provider);
-        while ($row = db_fetch_object($result)) {
-          $values[$method][$row->value] = array(
-            'provider' => $row->provider,
-            'id' => $row->id,
-          );
-        }
+        $values[$method] = isset($values[$method]) ? $values[$method] : array();
+        $values[$method] = array_merge($values[$method], $db_values[$provider]);
       }
     }
   }
