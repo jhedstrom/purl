@@ -23,12 +23,15 @@ Drupal menu system. By default, the Drupal menu system reacts to only one part
 of a request: $_GET['q']. PURL aims to be a pluggable system for reacting to
 parts of $GET['q'] but many others as well.
 
-Some parts of a request that a PURL provider may respond to:
+Other than the "normal" drupal path, here are some parts of a request that a
+PURL provider may respond to:
 
   Mozilla    http:// foobar.baz.com / group-a / node/5 ? foo=bar
-    |                   |               |                   |
-    |                   |               |                   |
-  User agent     Subdomain/Domain     Prefix           Query string
+    |                   |               |         |         |
+    |                   |               |         |         |
+  User agent     Subdomain/Domain     Prefix      |    Query string
+                                                  |
+                                        ("Normal" drupal path)
 
 Any modules using the PURL API must define one or more providers.
 
@@ -96,16 +99,103 @@ any paths pushed through `url()` will be given the additional path prefix of
 AJAX calls will be prefixed.
 
 
-Usage overview
---------------
+API usage: General
+------------------
 
-@TODO
+These instructions are for general usage of the PURL API.
+
+Since the scope of PURL goes beyond $_GET['q'], PURL provides several
+additional options to the `$options` array passed to `url()` and its derivate
+`l()`. These options can also be passed to `purl_goto()`, a wrapper around
+`drupal_goto()` that allows an `$options` array to be passed (which
+`drupal_goto()` does not allow out of the box).
+
+PURL extends the `$options` array in four ways:
+
+1. If `$options['purl']['disabled']` is true none of the detected and removed
+   path modifications will be re-instated. This allows you to drop all PURL
+   modifications. Example:
+
+   // On a page with PURL modifiers like `mygroup/node/43?viewstyle=list`,
+   // generate a URL to node/43 that drops all PURL modifiers. The resulting
+   // URL will point at just `node/43`.
+
+   l('Foobar', 'node/43', array('purl' => array('disabled' => TRUE)));
+
+2. $options['purl']['remove'] can be set to an array of providers which should
+   be dropped, while others are maintained. Setting this when
+   $options['purl']['disabled'] is true is redundant. Example:
+
+   // On a page with PURL modifiers like `mygroup/node/43?viewstyle=list`,
+   // generate a URL to node/43 that drops only the specified PURL modifier.
+   // The resulting URL will point at `node/43?viewstyle=list`.
+
+   l('Foobar', 'node/43', array('purl' => array('remove' => array('spaces_og'))));
+
+3. $options['purl']['provider'] and $options['purl']['id'] can be used
+   together to set a specific modification to the link.
+
+   // Generate a URL that includes a specific PURL modifier. Note that this
+   // should always be used in favor of generating an absolute URL manually
+   // as callers should not assume that a provider is using a specific method.
+   // Assuming that the modifier is ['mygroup', 5], The resulting URL will
+   // point at `mygroup/node/43`
+
+   l('Foobar', 'node/43', array('purl' => array('provider' => 'spaces_og', 'id' => 5)));
+
+4. $options['purl]['add'] can be used to add a set of id's and provider's to
+   the link.
+
+   // Generate a URL that adds one or more PURL modifiers, including any that
+   // are active for the current request. On a page with PURL modifiers like
+   // `mygroup/node/43`, the following will result in a URL that points at
+   // `mygroup/node/43?viewstyle=list`.
+
+   l('Foobar', 'node/43', array('purl' => array('add' => array('provider' => 'views_modes', 'id' => 'list'))));
+
+The `l()` function is used in In all of the examples, but the same options
+array can be passed to `url()` or `purl_goto()` to capture the equivalent
+behavior. For example:
+
+   // Go to `mygroup/node/43`.
+
+   purl_goto('node/43', array('purl' => array('provider' => 'spaces_og', 'id' => 5)));
+
+
+API usage: Providers
+--------------------
+
+These instructions are for modules that would like to respond to or modify
+requests using PURL. First, read `purl.api.php` for documentation on the
+various hooks called by PURL.
+
+1. Add an implementation of `hook_purl_provider()` to your module.
+
+2. Add a callback function that will be passed the ID of any modifiers found
+   by PURL to your module.
+
+3. If your module expects a static set of modifiers or will store and retrieve
+   modifiers using its own storage, implement hook_purl_modifiers() to tell
+   PURL about modifiers that are valid for your provider.
+
+   OR
+
+   If you would like to store modifiers in PURL's database table, you may want
+   to add the elements provided by `purl_form()` to the form for your node,
+   user, term, or other element associated with your modifier. You will need to
+   implement basic CRUD for the PURL modifier in your form's submit handler -
+   see `purl_save()`.
+
+4. Go to `admin/settings/purl` and choose a method to use with your provider.
+
+5. Make a request to your Drupal site that uses a valid modifier and test.
 
 
 Maintainers
 -----------
 yhahn (Young Hahn)
 jmiccolis (Jeff Miccolis)
+
 
 Contributors
 ------------
