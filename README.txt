@@ -6,9 +6,9 @@ Persistent URL for Drupal 6.x
 Installation
 ------------
 
-PURL can be installed like any other Drupal module -- place it in the modules
-directory for your site and enable it (and its requirement, context) on the
-admin/build/modules page.
+PURL can be installed like any other Drupal module -- place it in the
+`sites/all/modules` (or a site or profile specific module directory) directory
+for your site and enable it on the `admin/build/modules` page.
 
 PURL is an API module. It does absolutely nothing for the end user out of the
 box without other modules that take advantage of its API.
