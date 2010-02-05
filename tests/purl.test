@@ -2,16 +2,16 @@
 // $Id$
 
 /**
- * Unit tests for PURL.
+ * Basic tests for PURL.
  */
-class PURLUnitTestCase extends DrupalWebTestCase {
+class PURLBasicTest extends DrupalWebTestCase {
   /**
    * Test info.
    */
   public function getInfo() {
     return array(
-      'name' => t('Unit tests'),
-      'description' => t('Unit tests for PURL.') ,
+      'name' => t('Basic tests'),
+      'description' => t('Basic tests for PURL.') ,
       'group' => t('PURL'),
     );
   }
@@ -22,11 +22,16 @@ class PURLUnitTestCase extends DrupalWebTestCase {
   public function setUp() {
     parent::setUp(
       'ctools',
+      'locale',
       'purl',
       'purl_test'
     );
-    $admin_user = $this->drupalCreateUser(array('administer site configuration'));
+    $admin_user = $this->drupalCreateUser(array('administer languages', 'administer site configuration'));
     $this->drupalLogin($admin_user);
+
+    // Set up Spanish as second language.
+    $this->drupalPost('admin/settings/language/add', array('langcode' => 'es'), t('Add language'));
+    $this->drupalPost('admin/settings/language/configure', array('language_negotiation' => 1), t('Save settings'));
   }
 
   /**
@@ -47,61 +52,63 @@ class PURLUnitTestCase extends DrupalWebTestCase {
       'querystring' => 'querystring'
     ));
 
-    // Test with both providers set to path.
-    variable_set('purl_method_purl_test', 'path');
-    variable_set('purl_method_purl_alt', 'path');
-    $testname = t('Path + Path');
+    foreach (array("", "es/") as $langcode) {
+      // Test with both providers set to path.
+      variable_set('purl_method_purl_test', 'path');
+      variable_set('purl_method_purl_alt', 'path');
+      $testname = t('Path + Path');
 
-    $output = $this->drupalGet('admin/build/testing/purl');
-    $this->assertNoText('PURL test ID', t('@test: Modifier not present.', array('@test' => $testname)));
-    $this->assertText('Rewrite: /node', t('@test: Link not rewritten.', array('@test' => $testname)));
-    $this->assertText('Disable providers: /node', t('@test: Provider disabled.', array('@test' => $testname)));
-    $this->assertText('Remove provider: /node', t('@test: Provider removed.', array('@test' => $testname)));
-    $this->assertText('Add provider: /sweden/node', t('@test: Provider added.', array('@test' => $testname)));
+      $output = $this->drupalGet("{$langcode}admin/build/testing/purl");
+      $this->assertNoText('PURL test ID', t('@test: Modifier not present.', array('@test' => $testname)));
+      $this->assertText("Rewrite: /{$langcode}node", t('@test: Link not rewritten.', array('@test' => $testname)));
+      $this->assertText("Disable providers: /{$langcode}node", t('@test: Provider disabled.', array('@test' => $testname)));
+      $this->assertText("Remove provider: /{$langcode}node", t('@test: Provider removed.', array('@test' => $testname)));
+      $this->assertText("Add provider: /{$langcode}sweden/node", t('@test: Provider added.', array('@test' => $testname)));
 
-    $output = $this->drupalGet('foo/admin/build/testing/purl');
-    $this->assertText('PURL test ID: foo', t('@test: Modifier parsed.', array('@test' => $testname)));
-    $this->assertText('Rewrite: /foo/node', t('@test: Link rewritten.', array('@test' => $testname)));
-    $this->assertText('Disable providers: /node', t('@test: Provider disabled.', array('@test' => $testname)));
-    $this->assertText('Remove provider: /node', t('@test: Provider removed.', array('@test' => $testname)));
-    $this->assertText('Add provider: /sweden/foo/node', t('@test: Provider added.', array('@test' => $testname)));
+      $output = $this->drupalGet("{$langcode}foo/admin/build/testing/purl");
+      $this->assertText('PURL test ID: foo', t('@test: Modifier parsed.', array('@test' => $testname)));
+      $this->assertText("Rewrite: /{$langcode}foo/node", t('@test: Link rewritten.', array('@test' => $testname)));
+      $this->assertText("Disable providers: /{$langcode}node", t('@test: Provider disabled.', array('@test' => $testname)));
+      $this->assertText("Remove provider: /{$langcode}node", t('@test: Provider removed.', array('@test' => $testname)));
+      $this->assertText("Add provider: /{$langcode}sweden/foo/node", t('@test: Provider added.', array('@test' => $testname)));
 
-    // Test path + pair.
-    variable_set('purl_method_purl_alt', 'pair');
-    variable_set('purl_method_purl_alt_key', 'altkey');
-    $testname = t('Path + Pair');
+      // Test path + pair.
+      variable_set('purl_method_purl_alt', 'pair');
+      variable_set('purl_method_purl_alt_key', 'altkey');
+      $testname = t('Path + Pair');
 
-    $output = $this->drupalGet('admin/build/testing/purl');
-    $this->assertNoText('PURL test ID', t('@test: Modifier not present.', array('@test' => $testname)));
-    $this->assertText('Rewrite: /node', t('@test: Link not rewritten.', array('@test' => $testname)));
-    $this->assertText('Disable providers: /node', t('@test: Provider disabled.', array('@test' => $testname)));
-    $this->assertText('Remove provider: /node', t('@test: Provider removed.', array('@test' => $testname)));
-    $this->assertText('Add provider: /altkey/sweden/node', t('@test: Provider added.', array('@test' => $testname)));
+      $output = $this->drupalGet("{$langcode}admin/build/testing/purl");
+      $this->assertNoText('PURL test ID', t('@test: Modifier not present.', array('@test' => $testname)));
+      $this->assertText("Rewrite: /{$langcode}node", t('@test: Link not rewritten.', array('@test' => $testname)));
+      $this->assertText("Disable providers: /{$langcode}node", t('@test: Provider disabled.', array('@test' => $testname)));
+      $this->assertText("Remove provider: /{$langcode}node", t('@test: Provider removed.', array('@test' => $testname)));
+      $this->assertText("Add provider: /{$langcode}altkey/sweden/node", t('@test: Provider added.', array('@test' => $testname)));
 
-    $output = $this->drupalGet('foo/admin/build/testing/purl');
-    $this->assertText('PURL test ID: foo', t('@test: Modifier parsed.', array('@test' => $testname)));
-    $this->assertText('Rewrite: /foo/node', t('@test: Link rewritten.', array('@test' => $testname)));
-    $this->assertText('Disable providers: /node', t('@test: Provider disabled.', array('@test' => $testname)));
-    $this->assertText('Remove provider: /node', t('@test: Provider removed.', array('@test' => $testname)));
-    $this->assertText('Add provider: /altkey/sweden/foo/node', t('@test: Provider added.', array('@test' => $testname)));
+      $output = $this->drupalGet("{$langcode}foo/admin/build/testing/purl");
+      $this->assertText('PURL test ID: foo', t('@test: Modifier parsed.', array('@test' => $testname)));
+      $this->assertText("Rewrite: /{$langcode}foo/node", t('@test: Link rewritten.', array('@test' => $testname)));
+      $this->assertText("Disable providers: /{$langcode}node", t('@test: Provider disabled.', array('@test' => $testname)));
+      $this->assertText("Remove provider: /{$langcode}node", t('@test: Provider removed.', array('@test' => $testname)));
+      $this->assertText("Add provider: /{$langcode}altkey/sweden/foo/node", t('@test: Provider added.', array('@test' => $testname)));
 
-    // Test path + querystring.
-    variable_set('purl_method_purl_alt', 'querystring');
-    variable_set('purl_method_purl_alt_key', 'altkey');
-    $testname = t('Path + Querystring');
+      // Test path + querystring.
+      variable_set('purl_method_purl_alt', 'querystring');
+      variable_set('purl_method_purl_alt_key', 'altkey');
+      $testname = t('Path + Querystring');
 
-    $output = $this->drupalGet('admin/build/testing/purl');
-    $this->assertNoText('PURL test ID', t('@test: Modifier not present.', array('@test' => $testname)));
-    $this->assertText('Rewrite: /node', t('@test: Link not rewritten.', array('@test' => $testname)));
-    $this->assertText('Disable providers: /node', t('@test: Provider disabled.', array('@test' => $testname)));
-    $this->assertText('Remove provider: /node', t('@test: Provider removed.', array('@test' => $testname)));
-    $this->assertText('Add provider: /node?altkey=sweden', t('@test: Provider added.', array('@test' => $testname)));
+      $output = $this->drupalGet("{$langcode}admin/build/testing/purl");
+      $this->assertNoText('PURL test ID', t('@test: Modifier not present.', array('@test' => $testname)));
+      $this->assertText("Rewrite: /{$langcode}node", t('@test: Link not rewritten.', array('@test' => $testname)));
+      $this->assertText("Disable providers: /{$langcode}node", t('@test: Provider disabled.', array('@test' => $testname)));
+      $this->assertText("Remove provider: /{$langcode}node", t('@test: Provider removed.', array('@test' => $testname)));
+      $this->assertText("Add provider: /{$langcode}node?altkey=sweden", t('@test: Provider added.', array('@test' => $testname)));
 
-    $output = $this->drupalGet('foo/admin/build/testing/purl');
-    $this->assertText('PURL test ID: foo', t('@test: Modifier parsed.', array('@test' => $testname)));
-    $this->assertText('Rewrite: /foo/node', t('@test: Link rewritten.', array('@test' => $testname)));
-    $this->assertText('Disable providers: /node', t('@test: Provider disabled.', array('@test' => $testname)));
-    $this->assertText('Remove provider: /node', t('@test: Provider removed.', array('@test' => $testname)));
-    $this->assertText('Add provider: /foo/node?altkey=sweden', t('@test: Provider added.', array('@test' => $testname)));
+      $output = $this->drupalGet("{$langcode}foo/admin/build/testing/purl");
+      $this->assertText('PURL test ID: foo', t('@test: Modifier parsed.', array('@test' => $testname)));
+      $this->assertText("Rewrite: /{$langcode}foo/node", t('@test: Link rewritten.', array('@test' => $testname)));
+      $this->assertText("Disable providers: /{$langcode}node", t('@test: Provider disabled.', array('@test' => $testname)));
+      $this->assertText("Remove provider: /{$langcode}node", t('@test: Provider removed.', array('@test' => $testname)));
+      $this->assertText("Add provider: /{$langcode}foo/node?altkey=sweden", t('@test: Provider added.', array('@test' => $testname)));
+    }
   }
 }
