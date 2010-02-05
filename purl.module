@@ -180,8 +180,8 @@ function purl_get_normal_path($q, $activate = FALSE, $reset = FALSE) {
   if (!isset($cache[$q]) || $reset) {
     $cache[$q] = array();
     $adjusted[$q] = $q;
-    // Detect all modifiers, parse them into their respective provider values
-    // and activate them if necessary.
+    // Detect all modifiers, parse them into their respective provider values,
+    // and allow processors to adjust the query string.
     foreach (array_keys(_purl_options()) as $method) {
       $processor = purl_get_processor($method);
 
