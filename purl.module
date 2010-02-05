@@ -514,7 +514,7 @@ function purl_load($modifier) {
  */
 function purl_validate($modifier) {
   // Check that the value is valid
-  if (check_plain($modifier['provider']) && !empty($modifier['value']) && preg_match('!^[a-z0-9_-]+$!', $modifier['value']) && !menu_get_item($modifier['value'])) {
+  if (check_plain($modifier['provider']) && !empty($modifier['value']) && preg_match('!^[\.a-z0-9_-]+$!', $modifier['value']) && !menu_get_item($modifier['value'])) {
     $id = db_result(db_query("SELECT id FROM {purl} WHERE value = '%s'", $modifier['value']));
     if (!$id) {
       return true;
