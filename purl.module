@@ -199,6 +199,11 @@ function purl_get_normal_path($q, $activate = FALSE, $reset = FALSE) {
         $cache[$q][$method] = $elements;
       }
     }
+    // Now that the path has been fully rewritten, check to see if there is
+    // an available path alias.
+    if ($src = drupal_lookup_path('source', $adjusted[$q])) {
+      $adjusted[$q] = $src;
+    }
   }
   // If the activate flag has been thrown, activate provider callbacks.
   if ($activate) {
