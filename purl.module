@@ -439,7 +439,7 @@ function purl_modifiers($requested_method) {
         }
       }
       // Otherwise, use any DB values for this provider.
-      else {
+      else if (!empty($db_values[$provider])) {
         $values[$method] = isset($values[$method]) ? $values[$method] : array();
         $values[$method] = array_merge($values[$method], $db_values[$provider]);
       }
