@@ -376,9 +376,9 @@ function purl_generate_rewrite_elements($item) {
  * @return
  *   Array of modifiers
  */
-function purl_modifiers($requested_method) {
+function purl_modifiers($requested_method = NULL, $reset = FALSE) {
   static $values;
-  if (!isset($values)) {
+  if (!isset($values) || $reset) {
     $values = array();
 
     // Invoke purl_modifiers() and gather all values
@@ -538,6 +538,7 @@ function purl_save($modifier) {
     else {
       $status = drupal_write_record('purl', $modifier);
     }
+    purl_modifiers(NULL, TRUE);
     return $status;
   }
   return false;
@@ -558,9 +559,10 @@ function purl_delete($modifier) {
   $check = db_result(db_query("SELECT id FROM {purl} WHERE provider = '%s' AND $param = '%s'", $modifier['provider'], $where));
   if ($check) {
     $status = db_query("DELETE FROM {purl} WHERE provider = '%s' AND $param = '%s'", $modifier['provider'], $where);
+    purl_modifiers(NULL, TRUE);
     return $status;
   }
-  return false;
+  return FALSE;
 }
 
 /**
