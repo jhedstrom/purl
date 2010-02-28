@@ -13,15 +13,25 @@ function purl_theme($existing, $type, $theme, $path) {
 }
 
 /**
- * Implementation of hook_plugin_ctools_api()
+ * Implementation of hook_plugin_ctools_api().
  */
-function purl_plugin_ctools_api($owner, $api) {
+function purl_ctools_plugin_api($owner, $api) {
   if ($owner == 'purl' && $api == 'processor') {
     return array(
       'version' => 1,
       'path' => 'includes',
     );
   }
+}
+
+/**
+ * Implementation of hook_ctools_plugin_processor().
+ */
+function purl_ctools_plugin_processor() {
+  return array(
+    'cache' => TRUE,
+    'use hooks' => TRUE
+  );
 }
 
 /**
@@ -702,7 +712,7 @@ function purl_form_validate($form) {
  * @return array of options, keys are machine names and values are the human
  *         readable counterparts.
  */
-function _purl_options($active = true) {
+function _purl_options($active = TRUE) {
   static $enabled_options;
 
   if (isset($enabled_options) && $active) {
@@ -710,6 +720,7 @@ function _purl_options($active = true) {
   }
 
   ctools_include('plugins');
+  $options = array();
   foreach (ctools_get_plugins('purl', 'processor') as $key => $processor) {
     $options[$key] = $processor['title'];
   }
@@ -838,7 +849,6 @@ class purl_cache {
 function purl_get_processor($method) {
   static $processors;
   if (!isset($processors[$method])) {
-    module_load_include('inc', 'purl', 'includes/purl_processor');
     ctools_include('plugins');
     $class = ctools_plugin_load_class('purl', 'processor', $method, 'handler');
     $processors[$method] = new $class();
@@ -897,16 +907,24 @@ class purl_path_element {
 }
 
 /**
- * Implementation of hook_purl_processor.
+ * Implementation of hook_purl_processor().
  */
 function purl_purl_processor() {
   $info = array();
+  $info['processor'] = array(
+    'handler' => array(
+      'class' => 'purl_processor',
+      'file' => 'purl_processor.inc',
+      'path' => drupal_get_path('module', 'purl') .'/includes',
+    ),
+  );
   $info['path'] = array(
     'title' => t('Path'),
     'handler' => array(
       'class' => 'purl_path',
       'file' => 'purl_path.inc',
       'path' => drupal_get_path('module', 'purl') .'/includes',
+      'parent' => 'processor',
     ),
   );
   $info['pair'] = array(
@@ -914,9 +932,9 @@ function purl_purl_processor() {
     'null_id' => true, // Don't attempt to user distinct ids with this processor
     'handler' => array(
       'class' => 'purl_pair',
-      'parent' => 'path',
       'file' => 'purl_pair.inc',
       'path' => drupal_get_path('module', 'purl') .'/includes',
+      'parent' => 'path',
     ),
   );
   $info['subdomain'] = array(
@@ -925,6 +943,7 @@ function purl_purl_processor() {
       'class' => 'purl_subdomain',
       'file' => 'purl_subdomain.inc',
       'path' => drupal_get_path('module', 'purl') .'/includes',
+      'parent' => 'processor',
     ),
   );
   $info['domain'] = array(
@@ -933,6 +952,7 @@ function purl_purl_processor() {
       'class' => 'purl_domain',
       'file' => 'purl_domain.inc',
       'path' => drupal_get_path('module', 'purl') .'/includes',
+      'parent' => 'processor',
     ),
   );
   $info['extension'] = array(
@@ -941,6 +961,7 @@ function purl_purl_processor() {
       'class' => 'purl_extension',
       'file' => 'purl_extension.inc',
       'path' => drupal_get_path('module', 'purl') .'/includes',
+      'parent' => 'processor',
     ),
   );
   $info['useragent'] = array(
@@ -949,6 +970,7 @@ function purl_purl_processor() {
       'class' => 'purl_useragent',
       'file' => 'purl_useragent.inc',
       'path' => drupal_get_path('module', 'purl') .'/includes',
+      'parent' => 'processor',
     ),
   );
   $info['querystring'] = array(
@@ -958,6 +980,7 @@ function purl_purl_processor() {
       'class' => 'purl_querystring',
       'file' => 'purl_querystring.inc',
       'path' => drupal_get_path('module', 'purl') .'/includes',
+      'parent' => 'processor',
     ),
   );
   return $info;
