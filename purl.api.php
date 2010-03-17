@@ -39,7 +39,7 @@ function hook_purl_provider() {
  */
 function hook_purl_modifiers() {
   return array(
-    'my_module' => array(
+    'example_provider' => array(
       array('value' => 'foo', 'id' => 1),
       array('value' => 'bar', 'id' => 2),
     ),
