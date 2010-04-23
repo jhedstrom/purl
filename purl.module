@@ -549,7 +549,7 @@ function purl_validate($modifier) {
  */
 function purl_save($modifier) {
   if (purl_validate($modifier)) {
-    $id = db_result(db_query("SELECT id FROM {purl} WHERE id = '%s'", $modifier['id']));
+    $id = db_result(db_query("SELECT id FROM {purl} WHERE id = '%s' AND provider = '%s'", $modifier['id'], $modifier['provider']));
     if (!empty($id)) {
       $status = drupal_write_record('purl', $modifier, array('provider', 'id'));
     }
