@@ -22,7 +22,7 @@ class purl_subdomain implements purl_processor {
 
   function detect($q) {
     $parts = explode('.', str_replace('http://','',$_SERVER['HTTP_HOST']));
-    return array_shift($parts);
+    return count($parts) > 1 ? array_shift($parts) : NULL;
   }
 
   public function method() {
