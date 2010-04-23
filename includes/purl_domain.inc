@@ -45,19 +45,23 @@ class purl_domain implements purl_processor {
 
   public function adjust(&$value, $item, &$q) { return; }
 
-  /**
-   * Either force the url, or set it back to the base.
-   */
   public function rewrite(&$path, &$options, $element) {
     $options['absolute'] = TRUE;
-    if (!_purl_skip($element, $options)) {
-      $options['base_url'] = "http://{$element->value}";
+    if ($base_url = $this->base_url()) {
+      if (!_purl_skip($element, $options)) {
+        $base = parse_url($base_url);
+        $options['base_url'] = "{$base['scheme']}://{$element->value}{$base['path']}";
+      }
+      else {
+        $options['base_url'] = $base_url;
+      }
     }
-    else {
-      global $base_url;
-      $base = variable_get('purl_base_domain', $base_url);
-      $options['base_url'] = !empty($base) ? $base : $base_url;
-    }
+  }
+
+  protected function base_url() {
+    global $base_url;
+    $base = variable_get('purl_base_domain', $base_url);
+    return !empty($base) ? $base : $base_url;
   }
 }
 

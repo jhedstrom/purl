@@ -45,29 +45,20 @@ class purl_subdomain implements purl_processor {
 
   public function rewrite(&$path, &$options, $element) {
     $options['absolute'] = TRUE;
-    if (!_purl_skip($element, $options)) {
-      // Check to see if the link has already been treated.
-      $parts = explode('.', str_replace('http://','', $options['base_url']));
-      $possible = array_shift($parts);
-      $matches = purl_parse($this, $possible);
+    if ($base_url = $this->base_url()) {
+      if (!_purl_skip($element, $options)) {
+        $base = parse_url($base_url);
+        $options['base_url'] = "{$base['scheme']}://{$element->value}.{$base['host']}{$base['path']}";
+      }
+      else {
+        $options['base_url'] = $base_url;
+      }
+    }
+  }
 
-      // If not add our subdomain.
-      if (!count($matches)) {
-        // ...but replace what we checked first.
-        array_unshift($parts, $possible);
-        array_unshift($parts, $element->value);
-        $options['base_url'] = "http://". implode('.', $parts);
-      }
-      // Or if our value does not match the link value, replace it.
-      else if (current($matches)->value != $element->value) {
-        array_unshift($parts, $element->value);
-        $options['base_url'] = "http://". implode('.', $parts);
-      }
-    }
-    else {
-      global $base_url;
-      $base = variable_get('purl_base_domain', $base_url);
-      $options['base_url'] = !empty($base) ? $base : $base_url;
-    }
+  protected function base_url() {
+    global $base_url;
+    $base = variable_get('purl_base_domain', $base_url);
+    return !empty($base) ? $base : $base_url;
   }
 }
