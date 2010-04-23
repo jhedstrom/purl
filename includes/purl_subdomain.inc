@@ -55,13 +55,18 @@ class purl_subdomain implements purl_processor {
         // ...but replace what we checked first.
         array_unshift($parts, $possible);
         array_unshift($parts, $element->value);
-
-        $options['absolute'] = TRUE;
+        $options['base_url'] = "http://". implode('.', $parts);
+      }
+      // Or if our value does not match the link value, replace it.
+      else if (current($matches)->value != $element->value) {
+        array_unshift($parts, $element->value);
         $options['base_url'] = "http://". implode('.', $parts);
       }
     }
     else {
-      $options['base_url'] = variable_get('purl_base_domain', $base_url);
+      global $base_url;
+      $base = variable_get('purl_base_domain', $base_url);
+      $options['base_url'] = !empty($base) ? $base : $base_url;
     }
   }
 }
