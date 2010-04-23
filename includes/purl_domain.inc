@@ -7,6 +7,7 @@
 class purl_domain implements purl_processor {
 
   public function admin_form(&$form, $id) {
+    global $base_url;
     $form['purl_location'] = array(
       '#type' => 'fieldset',
     );
@@ -53,7 +54,9 @@ class purl_domain implements purl_processor {
       $options['base_url'] = "http://{$element->value}";
     }
     else {
-      $options['base_url'] = variable_get('purl_base_domain', $base_url);
+      global $base_url;
+      $base = variable_get('purl_base_domain', $base_url);
+      $options['base_url'] = !empty($base) ? $base : $base_url;
     }
   }
 }

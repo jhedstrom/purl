@@ -7,6 +7,7 @@
 class purl_subdomain implements purl_processor {
 
   public function admin_form(&$form, $id) {
+    global $base_url;
     $form['purl_location'] = array(
       '#type' => 'fieldset',
     );
