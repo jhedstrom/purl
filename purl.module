@@ -100,6 +100,13 @@ function purl_form_alter(&$form, &$form_state, $form_id) {
       module_load_include('inc','purl', 'purl.admin');
       _purl_form_alter($form, $form_state, $form_id);
       break;
+    case 'views_exposed_form':
+      foreach (purl_active()->get('querystring') as $element) {
+        if (!isset($form[$element->value])) {
+          $form[$element->value] = array('#type' => 'hidden', '#value' => $element->id);
+        }
+      }
+      break;
   }
 }
 
