@@ -668,7 +668,7 @@ function purl_disable($set = FALSE) {
  * FormAPI form array. Includes validation, but insert/update must be
  * handled by the implementing submit handler.
  */
-function purl_form($provider, $id, $value = '') {
+function purl_form($provider, $id, $value = '', $required = TRUE) {
   $method = variable_get('purl_method_'. $provider, 'path');
   $processor = purl_get_processor($method);
 
@@ -686,7 +686,7 @@ function purl_form($provider, $id, $value = '') {
     '#description' => $processor->description(),
     '#size' => 20,
     '#maxlength' => 255,
-    '#required' => TRUE,
+    '#required' => $required,
     '#default_value' => $value,
     '#field_prefix' => $method == 'path' ? $base_url .'/' : NULL,
   );
@@ -705,6 +705,9 @@ function purl_form($provider, $id, $value = '') {
  * Validation handler for purl_form().
  */
 function purl_form_validate($form) {
+  if (!$form['value']['#required'] && empty($form['value']['#value'])) {
+    return TRUE;
+  }
   $modifier = array(
     'provider' => $form['provider']['#value'],
     'value' => $form['value']['#value'],
@@ -712,10 +715,10 @@ function purl_form_validate($form) {
   );
   if (!purl_validate($modifier)) {
     form_set_error($form['#parents'][0], t('There was an error registering the value "@value". It is either invalid or is already taken. Please choose another.', array('@value' => $form['value']['#value'])));
-    return false;
+    return FALSE;
   }
   else {
-    return true;
+    return TRUE;
   }
 }
 
