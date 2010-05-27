@@ -805,7 +805,7 @@ class purl_cache {
       return (isset($this->cache[$method][$id]) ? $this->cache[$method][$id] : false);
     }
     elseif ($method !== false) {
-      return $this->cache[$method];
+      return isset($this->cache[$method]) ? $this->cache[$method] : array();
     }
     else {
       return $this->cache;
