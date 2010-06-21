@@ -48,7 +48,8 @@ class purl_subdomain implements purl_processor {
     if ($base_url = $this->base_url()) {
       if (!_purl_skip($element, $options)) {
         $base = parse_url($base_url);
-        $options['base_url'] = "{$base['scheme']}://{$element->value}.{$base['host']}{$base['path']}";
+        $port = (!empty($base['port'])) ? ':'.$base['port'] : "";
+        $options['base_url'] = "{$base['scheme']}://{$element->value}.{$base['host']}{$port}{$base['path']}";
       }
       else {
         $options['base_url'] = $base_url;
