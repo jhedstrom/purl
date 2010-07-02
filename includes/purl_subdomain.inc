@@ -17,6 +17,7 @@ class purl_subdomain implements purl_processor {
       '#description' => t('Enter the default domain if you are using domain modifiers.'),
       '#required' => FALSE,
       '#default_value' => variable_get('purl_base_domain', $base_url),
+      '#element_validate' => array('purl_validate_fqdn'),
     );
   }
 
