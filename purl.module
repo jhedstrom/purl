@@ -466,7 +466,7 @@ function purl_modifiers($requested_method = NULL, $reset = FALSE) {
       // Otherwise, use any DB values for this provider.
       else if (!empty($db_values[$provider])) {
         $values[$method] = isset($values[$method]) ? $values[$method] : array();
-        $values[$method] = array_merge($values[$method], $db_values[$provider]);
+        $values[$method] = $values[$method] + $db_values[$provider];
       }
     }
   }
