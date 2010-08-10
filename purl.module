@@ -516,22 +516,23 @@ function purl_providers($by_method = FALSE) {
 /**
  * Load a modifier from the database by provider or value.
  */
-function purl_load($modifier) {
-  if (isset($modifier['provider'])) {
-    if ($modifier['id']) {
-      $modifier = db_fetch_array(db_query("SELECT * FROM {purl} WHERE id = '%s' AND provider = '%s'", $modifier['id'], $modifier['provider']));
-      if ($modifier) {
-        return $modifier;
+function purl_load($modifier, $reset = FALSE) {
+  static $cache;
+  if (!isset($cache) || $reset) {
+    $cache = array();
+  }
+  foreach (array('id', 'value') as $key) {
+    if (isset($modifier['provider'], $modifier[$key])) {
+      $provider = $modifier['provider'];
+      $val = $modifier[$key];
+      if (!isset($cache[$key][$provider][$val])) {
+        $loaded = db_fetch_array(db_query("SELECT * FROM {purl} WHERE {$key} = '%s' AND provider = '%s'", $val, $provider));
+        $cache[$key][$provider][$val] = $loaded;
       }
-    }
-    else if (!empty($modifier['value'])) {
-      $modifier = db_fetch_array(db_query("SELECT * FROM {purl} WHERE value = '%s' AND provider = '%s'", $modifier['value'], $modifier['provider']));
-      if ($modifier) {
-        return $modifier;
-      }
+      return $cache[$key][$provider][$val];
     }
   }
-  return false;
+  return FALSE;
 }
 
 /**
@@ -563,10 +564,11 @@ function purl_save($modifier) {
     else {
       $status = drupal_write_record('purl', $modifier);
     }
+    purl_load(NULL, TRUE);
     purl_modifiers(NULL, TRUE);
     return $status;
   }
-  return false;
+  return FALSE;
 }
 
 /**
@@ -584,6 +586,7 @@ function purl_delete($modifier) {
   $check = db_result(db_query("SELECT id FROM {purl} WHERE provider = '%s' AND $param = '%s'", $modifier['provider'], $where));
   if ($check) {
     $status = db_query("DELETE FROM {purl} WHERE provider = '%s' AND $param = '%s'", $modifier['provider'], $where);
+    purl_load(NULL, TRUE);
     purl_modifiers(NULL, TRUE);
     return $status;
   }
