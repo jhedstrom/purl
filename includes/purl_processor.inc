@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Processors can inspect and manipulate various parts of a request's URI.

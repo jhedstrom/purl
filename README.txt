@@ -1,4 +1,3 @@
-$Id$
 
 Persistent URL for Drupal 6.x
 

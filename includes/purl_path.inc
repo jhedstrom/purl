@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Path prefixer.

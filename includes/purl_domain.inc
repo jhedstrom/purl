@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  *  Full domain handling.

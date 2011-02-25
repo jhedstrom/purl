@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * File extension style. Like ".csv"

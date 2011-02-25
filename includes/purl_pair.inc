@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Pair pair prefixer.

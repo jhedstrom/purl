@@ -1,4 +1,3 @@
-// $Id$
 
 if (typeof(Drupal) == "undefined" || !Drupal.purl_admin) {
   Drupal.purl_admin = {};
