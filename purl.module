@@ -739,6 +739,8 @@ function _purl_options($active = TRUE) {
     return $enabled_options;
   }
 
+  // @see http://drupal.org/node/573646#comment-2589772 & http://drupal.org/node/923724.
+  module_load_include('module', 'ctools', 'ctools');
   ctools_include('plugins');
   $options = array();
   foreach (ctools_get_plugins('purl', 'processor') as $key => $processor) {
