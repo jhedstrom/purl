@@ -791,7 +791,12 @@ class purl_cache {
   public function add($method, $item, $merge = true) {
     if (is_array($item) && $merge) {
       // Need to preserve keys so we use the '+' array operator.
-      $this->cache[$method] = $this->cache[$method] + $item;
+      if (!isset($this->cache[$method]) && count($item) >= 1) {
+        $this->cache[$method] = array();
+      }
+      if (count($item) >= 1) {
+        $this->cache[$method] = $this->cache[$method] + $item;
+      }
     }
     else {
       $this->cache[$method][] = $item;
