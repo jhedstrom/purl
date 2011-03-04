@@ -1,4 +1,4 @@
 name = Persistent URL
-description = "Provides tools for using persistant URL pieces"
+description = "Provides tools for using persistent URL pieces"
 core = 6.x
 dependencies[] = ctools

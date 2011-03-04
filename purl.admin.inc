@@ -179,8 +179,8 @@ function _purl_form_alter(&$form, &$form_state, $form_id) {
       $form['purl'] = array(
         '#tree' => true,
         '#type' => 'fieldset',
-        '#title' => t('Persistant URL behavior'),
-        '#description' => t('All links are normally rewritten to contain the active persistant url elements. You may set all items in this menu to maintain existing modifications (the default), or to discard them.'),
+        '#title' => t('Persistent URL behavior'),
+        '#description' => t('All links are normally rewritten to contain the active persistent url elements. You may set all items in this menu to maintain existing modifications (the default), or to discard them.'),
       );
       $form['purl']['rewrite'] = array(
         '#type' => 'select',
@@ -200,14 +200,14 @@ function _purl_form_alter(&$form, &$form_state, $form_id) {
     $form['purl'] = array(
       '#tree' => true,
       '#type' => 'fieldset',
-      '#title' => t('Persistant URL'),
+      '#title' => t('Persistent URL'),
       '#weight' => -1,
     );
     $form['purl']['disabled'] = array(
       '#type' => 'select',
       '#options' => array(0 => t("Maintain"), 1 => ("Discard")),
       '#title' => t('Behavior'),
-      '#description' => t('All links are normally rewritten to contain the active persistant url elements. You may set this item to maintain existing modifications (the default), or to discard them.'),
+      '#description' => t('All links are normally rewritten to contain the active persistent url elements. You may set this item to maintain existing modifications (the default), or to discard them.'),
       '#default_value' => (isset($options['purl']) && isset($options['purl']['disabled'])) ? $options['purl']['disabled'] : 0,
     );
     // Fetch all modifiers.
@@ -223,7 +223,7 @@ function _purl_form_alter(&$form, &$form_state, $form_id) {
       '#type' => 'select',
       '#options' => $modifiers,
       '#title' => t('Modifier'),
-      '#description' => t('Enter a Persistant URL modifier to be used with this path.'),
+      '#description' => t('Enter a Persistent URL modifier to be used with this path.'),
       '#default_value' => (isset($options['purl']) && isset($options['purl']['provider']) && isset($options['purl']['id'])) ? $options['purl']['provider'] . ':' . $options['purl']['id'] : '',
     );
     $form['#validate'][] = 'purl_item_edit_validate';
