@@ -41,7 +41,7 @@ Any modules using the PURL API must define one or more providers.
 
 - A method is the means by which a provider is activated and modifies a
   request. The parts of the request, like user agent, prefix, query string,
-  etc. are all exapmles of methods.
+  etc. are all examples of methods.
 
 - A modifier is an id/value pair designated by a provider to trigger a response
   if found in the provider's method. Often modifiers map string aliases to an
@@ -77,11 +77,11 @@ A sample URL which would trigger *all* of the providers above:
 **Responding**
 
 When a modifier for a provider is found in a request, the provider's registered
-callback is called with the ID for the given modifier. For example, in the
-example above, the callback for provider `spaces_og` will be passed `5`, the id
-corresponding to the `mygroup`, and it is then the provider's job to do whatever
-it wants to do with that information. `spaces_og`, for example, will load node
-`5` and set it as the active group context.
+callback is called with the ID for the given modifier. To continue with the
+example from above, the callback for provider `spaces_og` will be passed `5`,
+the id corresponding to the `mygroup`, and it is then the provider's job to do
+whatever it wants to do with that information. `spaces_og`, for example, will
+load node `5` and set it as the active group context.
 
 Depending on the method (e.g. any that involve $_GET['q']), PURL may remove the
 modifier for the rest of the page load so that the request is passed cleanly to
@@ -152,7 +152,7 @@ PURL extends the `$options` array in four ways:
 
    l('Foobar', 'node/43', array('purl' => array('add' => array('provider' => 'views_modes', 'id' => 'list'))));
 
-The `l()` function is used in In all of the examples, but the same options
+The `l()` function is used in all of the examples above, but the same options
 array can be passed to `url()` or `purl_goto()` to capture the equivalent
 behavior. For example:
 
