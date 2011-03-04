@@ -200,15 +200,31 @@ function _purl_form_alter(&$form, &$form_state, $form_id) {
     $form['purl'] = array(
       '#tree' => true,
       '#type' => 'fieldset',
-      '#title' => t('Persistant URL behavior'),
-      '#description' => t('All links are normally rewritten to contain the active persistant url elements. You may set this item to maintain existing modifications (the default), or to discard them.'),
+      '#title' => t('Persistant URL'),
       '#weight' => -1,
     );
-    $form['purl']['rewrite'] = array(
+    $form['purl']['disabled'] = array(
       '#type' => 'select',
-      '#options' => array('enabled' => t("Maintain"), 'disabled' => ("Discard")),
+      '#options' => array(0 => t("Maintain"), 1 => ("Discard")),
       '#title' => t('Behavior'),
-      '#default_value' => (isset($options['purl']) && $options['purl'] == 'disabled') ? 'disabled' : 'enabled',
+      '#description' => t('All links are normally rewritten to contain the active persistant url elements. You may set this item to maintain existing modifications (the default), or to discard them.'),
+      '#default_value' => (isset($options['purl']) && isset($options['purl']['disabled'])) ? $options['purl']['disabled'] : 0,
+    );
+    // Fetch all modifiers.
+    $modifiers = array('' => t('<none>'));
+    $methods = _purl_options();
+    foreach (array_keys($methods) as $method) {
+      foreach (purl_modifiers($method) as $value => $info) {
+        $modifiers[$info['provider'] . ':' . $info['id']] = $value;
+      }
+    }
+    asort($modifiers);
+    $form['purl']['modifier'] = array(
+      '#type' => 'select',
+      '#options' => $modifiers,
+      '#title' => t('Modifier'),
+      '#description' => t('Enter a Persistant URL modifier to be used with this path.'),
+      '#default_value' => (isset($options['purl']) && isset($options['purl']['provider']) && isset($options['purl']['id'])) ? $options['purl']['provider'] . ':' . $options['purl']['id'] : '',
     );
     $form['#validate'][] = 'purl_item_edit_validate';
     $form['#submit'][] = 'purl_item_edit_submit';
@@ -265,10 +281,16 @@ function _purl_menu_edit_submit_recurse($tree, $behavior) {
  * menu_edit_item_submit() expects it.
  */
 function purl_item_edit_validate($form, &$form_state) {
-  if ($form_state['values']['purl']['rewrite'] == 'disabled') {
-    $form_state['values']['menu']['options']['purl'] = 'disabled';
+  $form_state['values']['menu']['options']['purl'] = array();
+  if (!empty($form_state['values']['purl']['modifier'])) {
+    list($provider, $id) = explode(':', $form_state['values']['purl']['modifier']);
+    $form_state['values']['menu']['options']['purl']['provider'] = $provider;
+    $form_state['values']['menu']['options']['purl']['id'] = $id;
   }
-  else {
+  if (!empty($form_state['values']['purl']['disabled'])) {
+    $form_state['values']['menu']['options']['purl']['disabled'] = 1;
+  }
+  if (empty($form_state['values']['menu']['options']['purl'])) {
     unset($form_state['values']['menu']['options']['purl']);
   }
 }
