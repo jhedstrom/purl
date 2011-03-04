@@ -284,7 +284,7 @@ if (!function_exists('custom_url_rewrite_outbound')) {
 }
 
 /**
- * Implementation of hook_url_alter_outbound().
+ * Implementation of hook_url_outbound_alter().
  *
  * Rewrites path with the current modifier and removes the modifier if
  * searching for source path.
