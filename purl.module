@@ -402,6 +402,14 @@ function purl_generate_rewrite_elements($item) {
  */
 function purl_modifiers($requested_method = NULL, $reset = FALSE) {
   static $values;
+
+  if (!isset($values) && !$reset) {
+    $cache = cache_get('purl_modifiers');
+    if ($cache) {
+      $values = $cache->data;
+    }
+  }
+
   if (!isset($values) || $reset) {
     $values = array();
 
@@ -468,6 +476,7 @@ function purl_modifiers($requested_method = NULL, $reset = FALSE) {
         $values[$method] = $values[$method] + $db_values[$provider];
       }
     }
+    cache_set('purl_modifiers', $values);
   }
 
   return (isset($values[$requested_method]) ? $values[$requested_method] : array());
