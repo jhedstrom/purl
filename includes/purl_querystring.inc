@@ -28,7 +28,8 @@ class purl_querystring implements purl_processor {
    * already.
    */
   public function detect($q) {
-    return drupal_query_string_encode($_GET, array('q', 'sort', 'order', 'page', 'pass'));
+    return drupal_http_build_query(drupal_get_query_parameters($_GET, array('q', 'sort', 'order', 'page', 'pass')));
+    //return drupal_query_string_encode($_GET, array('q', 'sort', 'order', 'page', 'pass'));
   }
 
   public function description() {
@@ -55,7 +56,7 @@ class purl_querystring implements purl_processor {
   /**
    * No need to do nothing at all.
    */
-  public function adjust(&$value, $item, &$q) {}
+  public function adjust(&$value, $item, &$q) { }
 
   /**
    * Removes specific modifier from a query string.

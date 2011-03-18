@@ -1,5 +1,8 @@
-core = "6.x"
+core = 7.x
 dependencies[] = "purl"
 description = "Test module for PURL testing."
 name = "Persistent URL tests"
 package = "Testing"
+
+files[] = purl.test
+files[] = purl_test.module

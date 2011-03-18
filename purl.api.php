@@ -53,7 +53,7 @@ function hook_purl_processor() {
   $plugins = array();
   $plugins['cookie'] = array(
     'handler' => array(
-      'path' => drupal_get_path('module', 'foo') .'/plugins',
+      'path' => drupal_get_path('module', 'foo') . '/plugins',
       'file' => 'purl_cookie.inc',
       'class' => 'purl_cookie',
     ),

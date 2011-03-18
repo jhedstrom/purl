@@ -21,34 +21,34 @@ function purl_admin() {
   $methods = _purl_options();
 
   $merged = array();
-  foreach(array_keys($methods) as $method) {
-    foreach(purl_modifiers($method) as $value => $info) {
+  foreach (array_keys($methods) as $method) {
+    foreach (purl_modifiers($method) as $value => $info) {
       $info['value'] = $value;
       $merged[] = $info;
     }
   }
 
   $rows = array();
-  for ($i = $page * $limit; $i < ($page+1) * $limit && $i < count($merged); $i++) {
+  for ($i = $page * $limit; $i < ($page + 1) * $limit && $i < count($merged); $i++) {
     $rows[] = array(
       $providers[$merged[$i]['provider']]['name'],
       $merged[$i]['value'],
       $merged[$i]['id'],
-      $methods[variable_get('purl_method_'. $merged[$i]['provider'], 'path')],
+      $methods[variable_get('purl_method_' . $merged[$i]['provider'], 'path')],
     );
   }
 
   // We calculate the total of pages as ceil(items / limit).
   $pager_total_items[$element] = count($merged);
   $pager_total[$element] = ceil($pager_total_items[$element] / $limit);
-  $pager_page_array[$element] = max(0, min((int)$pager_page_array[$element], ((int)$pager_total[$element]) - 1));
+  $pager_page_array[$element] = max(0, min((int) $pager_page_array[$element], ((int) $pager_total[$element]) - 1));
 
   if ($rows) {
-    $output = theme('table', array(t('Provider'), t('Modifier'), t('ID'), t('Method')), $rows);
+    $output = theme('table', array('header' => array(t('Provider'), t('Modifier'), t('ID'), t('Method')), 'rows' => $rows));
     $output .= theme('pager');
   }
   else {
-    $output = "<p>". t('No persistent urls have been registered.') ."</p>";
+    $output = "<p>" . t('No persistent urls have been registered.') . "</p>";
   }
   return $output;
 }
@@ -56,7 +56,7 @@ function purl_admin() {
 /**
  * Settings form for choosing the operating mode of purl
  */
-function purl_settings_form() {
+function purl_settings_form($form, &$form_state) {
   $form = array();
   $options = _purl_options();
 
@@ -78,11 +78,11 @@ function purl_settings_form() {
       '#title' => $provider['name'],
       '#description' => $provider['description'],
     );
-    $form[$id]['purl_method_'. $id] = array(
+    $form[$id]['purl_method_' . $id] = array(
       '#title' => t('Method'),
       '#type' => 'select',
       '#options' => $provider_options,
-      '#default_value' => variable_get('purl_method_'. $id, 'path'),
+      '#default_value' => variable_get('purl_method_' . $id, 'path'),
     );
 
     // Allow processors to alter the form.
@@ -117,14 +117,15 @@ function purl_admin_form_key_validate(&$element, &$form_state) {
  */
 function purl_validate_fqdn(&$element, &$form_state) {
   if (!empty($element['#value']) && !valid_url($element['#value'], TRUE)) {
-      form_set_error($element['#name'], t('The domain must be a fully qualified domain name of the form `http://www.example.com`.'));
+    form_set_error($element['#name'], t('The domain must be a fully qualified domain name of the form `http://www.example.com`.'));
   }
 }
 
 /**
  * Theme function for purl_settings_form()
  */
-function theme_purl_settings_form($form) {
+function theme_purl_settings_form($variables) {
+  $form = $variables['form'];
   $output = '';
   $rows = array();
   foreach (element_children($form) as $id) {
@@ -149,16 +150,16 @@ function theme_purl_settings_form($form) {
     }
     $rows[] = $row;
   }
-  $output .= theme('table', array(t('Provider'), t('Modifier type'), t('Settings')), $rows);
-  $output .= drupal_render($form);
-  drupal_add_js(drupal_get_path("module", "purl") ."/purl.admin.js");
+  $output .= theme('table', array('header' => array(t('Provider'), t('Modifier type'), t('Settings')), 'rows' => $rows));
+  $output .= drupal_render_children($form);
+  drupal_add_js(drupal_get_path("module", "purl") . "/purl.admin.js");
   return $output;
 }
 
 /**
  * Allow administrators to enable purl methods.
  */
-function purl_types_form() {
+function purl_types_form($form, &$form_state) {
   $form = array();
   $form['purl_types'] = array(
     '#type' => 'checkboxes',
@@ -175,7 +176,8 @@ function purl_types_form() {
  */
 function _purl_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'menu_edit_menu') {
-    if (isset($form['menu_name']['#value'])) {
+    //should this be the default value??
+    if (isset($form['menu_name']['#default_value'])) {
       $form['purl'] = array(
         '#tree' => true,
         '#type' => 'fieldset',
@@ -186,7 +188,7 @@ function _purl_form_alter(&$form, &$form_state, $form_id) {
         '#type' => 'select',
         '#options' => array('enabled' => t("Maintain"), 'disabled' => ("Discard")),
         '#title' => t('Behavior'),
-        '#default_value' => variable_get('purl_menu_behavior_'. $form['menu_name']['#value'], 'enabled'),
+        '#default_value' => variable_get('purl_menu_behavior_' . $form['menu_name']['#default_value'], 'enabled'),
       );
       $form['purl']['submit'] = array(
         '#type' => 'submit',
@@ -196,7 +198,8 @@ function _purl_form_alter(&$form, &$form_state, $form_id) {
     }
   }
   elseif ($form_id == 'menu_edit_item') {
-    $options = $form['menu']['options']['#value'];
+    // are these the options we wanted??
+    $options = $form['options']['#value'];
     $form['purl'] = array(
       '#tree' => true,
       '#type' => 'fieldset',
@@ -232,6 +235,10 @@ function _purl_form_alter(&$form, &$form_state, $form_id) {
 }
 
 // Submit handler for menu_edit_menu
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function purl_menu_edit_submit($form, &$form_state) {
   $menu = $form_state['values'];
   $tree = menu_tree_all_data($menu['menu_name']);
@@ -241,10 +248,10 @@ function purl_menu_edit_submit($form, &$form_state) {
   menu_cache_clear($menu['menu_name']);
 
   if ($menu['purl']['rewrite'] == 'disabled') {
-    variable_set('purl_menu_behavior_' .$menu['menu_name'], 'disabled');
+    variable_set('purl_menu_behavior_' . $menu['menu_name'], 'disabled');
   }
   else {
-    variable_del('purl_menu_behavior_' .$menu['menu_name']);
+    variable_del('purl_menu_behavior_' . $menu['menu_name']);
   }
 }
 
@@ -296,6 +303,10 @@ function purl_item_edit_validate($form, &$form_state) {
 }
 
 // Submit handler for menu_edit_item
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function purl_item_edit_submit($form, &$form_state) {
   menu_cache_clear($form_state['values']['menu']['menu_name']);
 }

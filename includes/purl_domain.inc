@@ -21,7 +21,7 @@ class purl_domain implements purl_processor {
   }
 
   function detect($q) {
-    return str_replace('http://','',$_SERVER['HTTP_HOST']);
+    return str_replace('http://', '', $_SERVER['HTTP_HOST']);
   }
 
   public function method() {
@@ -43,7 +43,9 @@ class purl_domain implements purl_processor {
     return purl_path_elements($this, $parsed);
   }
 
-  public function adjust(&$value, $item, &$q) { return; }
+  public function adjust(&$value, $item, &$q) {
+    return;
+  }
 
   public function rewrite(&$path, &$options, $element) {
     $options['absolute'] = TRUE;

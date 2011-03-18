@@ -21,7 +21,7 @@ class purl_subdomain implements purl_processor {
   }
 
   function detect($q) {
-    $parts = explode('.', str_replace('http://','',$_SERVER['HTTP_HOST']));
+    $parts = explode('.', str_replace('http://', '', $_SERVER['HTTP_HOST']));
     return count($parts) > 1 ? array_shift($parts) : NULL;
   }
 
@@ -41,14 +41,16 @@ class purl_subdomain implements purl_processor {
     return purl_path_elements($this, $parsed);
   }
 
-  public function adjust(&$value, $item, &$q) { return; }
+  public function adjust(&$value, $item, &$q) {
+    return;
+  }
 
   public function rewrite(&$path, &$options, $element) {
     $options['absolute'] = TRUE;
     if ($base_url = $this->base_url()) {
       if (!_purl_skip($element, $options)) {
         $base = parse_url($base_url);
-        $port = (!empty($base['port'])) ? ':'.$base['port'] : "";
+        $port = (!empty($base['port'])) ? ':' . $base['port'] : "";
         $options['base_url'] = "{$base['scheme']}://{$element->value}.{$base['host']}{$port}{$base['path']}";
       }
       else {

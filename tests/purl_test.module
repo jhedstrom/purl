@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function purl_test_menu() {
   return array(
-    'admin/build/testing/purl' => array(
+    'admin/config/development/testing/purl' => array(
       'page callback' => 'purl_test_page',
       'page arguments' => array(),
       'access callback' => 'user_access',
@@ -39,7 +39,7 @@ function purl_test_remove_base_path($link) {
 }
 
 /**
- * Implementation of hook_purl_provider().
+ * Implements hook_purl_provider().
  */
 function purl_test_purl_provider() {
   $items = array();
@@ -69,7 +69,7 @@ function purl_test_activate($value) {
 }
 
 /**
- * Implementation of hook_purl_modifiers().
+ * Implements hook_purl_modifiers().
  */
 function purl_test_purl_modifiers() {
   return array(

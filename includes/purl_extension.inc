@@ -66,5 +66,5 @@ class purl_extension implements purl_processor {
    * Because of the expected usage of the files extensions we don't provide
    * a rewrite.
    */
-  public function rewrite(&$path, &$options, $element) {}
+  public function rewrite(&$path, &$options, $element) { }
 }

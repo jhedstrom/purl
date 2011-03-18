@@ -1,5 +1,5 @@
 
-Persistent URL for Drupal 6.x
+Persistent URL for Drupal 7.x
 
 
 Installation

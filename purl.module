@@ -1,26 +1,25 @@
 <?php
 
 /**
- * Implementation of hook_boot().
+ * Implements hook_boot().
  * This hook is declared simply to ensure that PURL is loaded early enough for
  * url_alter detect its presence. (http://drupal.org/node/729862).
  */
-function purl_boot() {
-}
+function purl_boot() { }
 
 /**
- * Implementation of hook_theme().
+ * Implements hook_theme().
  */
 function purl_theme($existing, $type, $theme, $path) {
   return array(
     'purl_settings_form' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
   );
 }
 
 /**
- * Implementation of hook_plugin_ctools_api().
+ * Implements hook_ctools_plugin_api().
  */
 function purl_ctools_plugin_api($owner, $api) {
   if ($owner == 'purl' && $api == 'processor') {
@@ -32,71 +31,73 @@ function purl_ctools_plugin_api($owner, $api) {
 }
 
 /**
- * Implementation of hook_ctools_plugin_processor().
+ * Implements hook_ctools_plugin_type().
  */
-function purl_ctools_plugin_processor() {
-  return array(
-    'cache' => TRUE,
-    'use hooks' => TRUE
+
+
+function purl_ctools_plugin_type() {
+  $plugins = array(
+    'processor' => array(
+      'cache' => TRUE,
+      'use hooks' => TRUE
+    )
   );
+  return $plugins;
 }
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function purl_menu() {
   $items = array();
-  $items['admin/settings/purl'] = array(
-    'type' => MENU_NORMAL_ITEM,
+  $items['admin/config/search/purl'] = array(
     'title' => 'Persistent URL',
+    'type' => MENU_NORMAL_ITEM,
     'description' => 'Settings for persistent url.',
+    'position' => 'left',
+    'weight' => -5,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('purl_settings_form'),
-    'file' => 'purl.admin.inc',
-    'access callback' => 'user_access',
     'access arguments' => array('administer site configuration'),
-    'weight' => 10,
+    'file' => 'purl.admin.inc',
   );
-  $items['admin/settings/purl/settings'] = array(
-    'type' => MENU_DEFAULT_LOCAL_TASK,
+  $items['admin/config/search/purl/settings'] = array(
     'title' => 'Settings',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('purl_settings_form'),
-    'file' => 'purl.admin.inc',
-    'access callback' => 'user_access',
     'access arguments' => array('administer site configuration'),
-    'weight' => 0,
+    'file' => 'purl.admin.inc',
+    'weight' => 1,
   );
-  $items['admin/settings/purl/list'] = array(
+  $items['admin/config/search/purl/list'] = array(
     'type' => MENU_LOCAL_TASK,
     'title' => 'Modifiers',
     'page callback' => 'purl_admin',
-    'file' => 'purl.admin.inc',
-    'access callback' => 'user_access',
     'access arguments' => array('administer site configuration'),
-    'weight' => 5,
+    'file' => 'purl.admin.inc',
+    'weight' => 2,
   );
-  $items['admin/settings/purl/types'] = array(
+  $items['admin/config/search/purl/types'] = array(
     'type' => MENU_LOCAL_TASK,
     'title' => 'Types',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('purl_types_form'),
-    'file' => 'purl.admin.inc',
-    'access callback' => 'user_access',
     'access arguments' => array('administer site configuration'),
-    'weight' => 11,
+    'file' => 'purl.admin.inc',
+    'weight' => 3,
   );
   return $items;
 }
 
 /**
- * Implementation of hook_form_alter.
+ * Implements hook_form_alter().
  */
 function purl_form_alter(&$form, &$form_state, $form_id) {
   switch ($form_id) {
     case 'menu_edit_menu':
     case 'menu_edit_item':
-      module_load_include('inc','purl', 'purl.admin');
+      module_load_include('inc', 'purl', 'purl.admin');
       _purl_form_alter($form, $form_state, $form_id);
       break;
     case 'views_exposed_form':
@@ -110,14 +111,13 @@ function purl_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
- * Implementation of hook_init()
+ * Implements hook_init().
  * Checks for any valid persistent urls in request string and fire callback appropriately
  */
 function purl_init() {
   static $once;
   if (!isset($once)) {
     $once = TRUE;
-
     // Initialize a few things so that we can use them without warnings.
     if (!isset($_GET['q'])) {
       $_GET['q'] = '';
@@ -128,8 +128,11 @@ function purl_init() {
 
     // Initialize the PURL path modification stack.
     purl_inited(TRUE);
-    $_GET['q'] = $q = purl_language_strip($_REQUEST['q']);
-    drupal_init_path();
+
+    // TODO - is this still needed?? (Does language_init still modify $_GET['q'])
+    // $_GET['q'] = $q = purl_language_strip($_REQUEST['q']);
+    $_GET['q'] = $q = $_GET['q'];
+    drupal_path_initialize();
     purl_get_normal_path($q, TRUE);
   }
 }
@@ -139,6 +142,10 @@ function purl_init() {
  * PURL implements this itself as language_initialize() directly affects
  * $_GET['q'] and cannot be reused.
  */
+/**
+ * @todo is this still needed?? (Does language_init still modify $_GET['q'])
+ * @see http://drupal.org/update/modules/6/7#language_negotiation
+*/
 function purl_language_strip($path) {
   // Configured presentation language mode.
   $mode = variable_get('language_negotiation', LANGUAGE_NEGOTIATION_NONE);
@@ -172,23 +179,11 @@ function purl_inited($set = NULL) {
 }
 
 /**
- * Will define custom_url_rewrite_inbound(). If url_alter is enabled
- * (it has weight -1000) PURL's inbound alter will be called by its
- * implementation of custom_url_rewrite_inbound() instead.
- *
+ * Implements hook_url_alter_inbound().
+ * Rewrites an incoming drupal path (&$path) removing PURL modifiers.
  */
-if (!function_exists('custom_url_rewrite_inbound')) {
-  function custom_url_rewrite_inbound(&$result, $path, $path_language) {
-    return purl_url_inbound_alter($result, $path, $path_language);
-  }
-}
-
-/**
- * Implementation of hook_url_alter_inbound().
- * Rewrites an incoming drupal path (&$result) removing PURL modifiers.
- */
-function purl_url_inbound_alter(&$result, $path, $path_language) {
-  $result = purl_inited() ? purl_get_normal_path($result) : $result;
+function purl_url_inbound_alter(&$path, $original_path, $path_language) {
+  $path = purl_inited() ? purl_get_normal_path($path) : $path;
 }
 
 /**
@@ -208,7 +203,6 @@ function purl_get_normal_path($q, $activate = FALSE, $reset = FALSE) {
     // and allow processors to adjust the query string.
     foreach (array_keys(_purl_options()) as $method) {
       $processor = purl_get_processor($method);
-
       // Pass the requested Drupal query string for modifier detection.
       // Processors that don't use/affect the query string can access
       // the $_REQUEST or $_GET objects directly.
@@ -271,20 +265,9 @@ function purl_parse($processor, $q) {
   return $cache->get($processor->method(), $q);
 }
 
-/**
- * Will define custom_url_rewrite_outbound(). If url_alter is enabled
- * (it has weight -1000) PURL's outbound alter will be called by its
- * implementation of custom_url_rewrite_outbound() instead.
- * 
- */
-if (!function_exists('custom_url_rewrite_outbound')) {
-  function custom_url_rewrite_outbound(&$path, &$options, $original) {
-    return purl_url_outbound_alter($path, $options, $original);
-  }
-}
 
 /**
- * Implementation of hook_url_outbound_alter().
+ * Implements hook_url_outbound_alter().
  *
  * Rewrites path with the current modifier and removes the modifier if
  * searching for source path.
@@ -356,11 +339,11 @@ function purl_url_outbound_alter(&$path, &$options, $original) {
  * @return a purl_path_element object.
  */
 function purl_generate_rewrite_elements($item) {
-  $method = variable_get('purl_method_'. $item['provider'], 'path');
+  $method = variable_get('purl_method_' . $item['provider'], 'path');
 
   $processor = purl_get_processor($method);
   $local_modifiers = purl_modifiers($method);
-
+    
   $provider = $id = NULL;
   foreach ($local_modifiers as $k => $v) {
     if ($v['provider'] == $item['provider']) {
@@ -419,11 +402,11 @@ function purl_modifiers($requested_method = NULL, $reset = FALSE) {
 
     foreach ($providers as $provider => $items) {
       // Store providers for use when retrieving db values
-      $method = variable_get('purl_method_'. $provider, 'path');
+      $method = variable_get('purl_method_' . $provider, 'path');
       // If using a value pair we don't need to cache the valid values.
       $info = ctools_get_plugins('purl', 'processor', $method);
       if (!empty($info['null_id'])) {
-        $value = variable_get('purl_method_'. $provider .'_key', false);
+        $value = variable_get('purl_method_' . $provider . '_key', false);
         if ($value != false) {
           $values[$method][$value] = array(
             'provider' => $provider,
@@ -450,7 +433,7 @@ function purl_modifiers($requested_method = NULL, $reset = FALSE) {
     // Pull in all modifiers stored in the DB.
     $result = db_query("SELECT * FROM {purl}");
     $db_values = array();
-    while ($row = db_fetch_object($result)) {
+    foreach ($result as $row) {
       $db_values[$row->provider][$row->value] = array(
         'provider' => $row->provider,
         'id' => $row->id,
@@ -458,11 +441,11 @@ function purl_modifiers($requested_method = NULL, $reset = FALSE) {
     }
 
     foreach ($providers as $provider => $info) {
-      $method = variable_get('purl_method_'. $provider, 'path');
+      $method = variable_get('purl_method_' . $provider, 'path');
       $info = ctools_get_plugins('purl', 'processor', $method);
       // Don't load all data base values for keyed pairs.
       if (!empty($info['null_id'])) {
-        $value = variable_get('purl_method_'. $provider .'_key', false);
+        $value = variable_get('purl_method_' . $provider . '_key', false);
         if ($value != false) {
           $values[$method][$value] = array(
             'provider' => $provider,
@@ -506,8 +489,8 @@ function purl_providers($by_method = FALSE) {
     if (!isset($methods)) {
       $methods = new purl_cache();
 
-      foreach ($providers AS $id => $provider) {
-        $methods->add(variable_get('purl_method_'. $id, 'path'), array($id => $provider));
+      foreach ($providers as $id => $provider) {
+        $methods->add(variable_get('purl_method_' . $id, 'path'), array($id => $provider));
       }
     }
     return $methods->get();
@@ -524,23 +507,32 @@ function purl_providers($by_method = FALSE) {
 /**
  * Load a modifier from the database by provider or value.
  */
-function purl_load($modifier, $reset = FALSE) {
-  static $cache;
-  if (!isset($cache) || $reset) {
-    $cache = array();
-  }
-  foreach (array('id', 'value') as $key) {
-    if (isset($modifier['provider'], $modifier[$key])) {
-      $provider = $modifier['provider'];
-      $val = $modifier[$key];
-      if (!isset($cache[$key][$provider][$val])) {
-        $loaded = db_fetch_array(db_query("SELECT * FROM {purl} WHERE {$key} = '%s' AND provider = '%s'", $val, $provider));
-        $cache[$key][$provider][$val] = $loaded;
+function purl_load($modifiers, $reset = FALSE) {
+  foreach ($modifiers as $nid => &$modifier) {
+    static $cache;
+    if (!isset($cache) || $reset) {
+      $cache = array();
+    }
+    foreach (array('id', 'value') as $key) {
+      if (isset($modifier['provider'], $modifier[$key])) {
+        $provider = $modifier['provider'];
+        $val = $modifier[$key];
+        if (!isset($cache[$key][$provider][$val])) {
+          // TODO Make sure fetchAllAssoc() is getting what we want
+          $loaded = db_query("SELECT * FROM {purl} WHERE {$key} = :val AND provider = :provider",array(
+            ':val' => $val,
+            ':provider' => $provider
+          ))->fetchAllAssoc();
+          $cache[$key][$provider][$val] = $loaded;
+        }
+        return $cache[$key][$provider][$val];
       }
-      return $cache[$key][$provider][$val];
+    }
+    $node_additions = FALSE;
+    foreach ($node_additions as $property => &$value) {
+      $modifier->$property = $value;
     }
   }
-  return FALSE;
 }
 
 /**
@@ -549,7 +541,9 @@ function purl_load($modifier, $reset = FALSE) {
 function purl_validate($modifier) {
   // Check that the value is valid
   if (check_plain($modifier['provider']) && !empty($modifier['value']) && preg_match('!^[\.a-z0-9_-]+$!', $modifier['value']) && !menu_get_item($modifier['value'])) {
-    $id = db_result(db_query("SELECT id FROM {purl} WHERE value = '%s'", $modifier['value']));
+    $id = db_query("SELECT id FROM {purl} WHERE value = :value", array(
+      ':value' => $modifier['value']
+    ))->fetchField();
     if (!$id) {
       return true;
     }
@@ -565,7 +559,10 @@ function purl_validate($modifier) {
  */
 function purl_save($modifier) {
   if (purl_validate($modifier)) {
-    $id = db_result(db_query("SELECT id FROM {purl} WHERE id = '%s' AND provider = '%s'", $modifier['id'], $modifier['provider']));
+    $id = db_query("SELECT id FROM {purl} WHERE id = :id AND provider = :provider", array(
+      ':id' => $modifier['id'],
+      ':provider' => $modifier['provider']
+    ))->fetchField();
     if (!empty($id)) {
       $status = drupal_write_record('purl', $modifier, array('provider', 'id'));
     }
@@ -591,9 +588,13 @@ function purl_delete($modifier) {
     $param = 'id';
     $where = $modifier['id'];
   }
-  $check = db_result(db_query("SELECT id FROM {purl} WHERE provider = '%s' AND $param = '%s'", $modifier['provider'], $where));
+  $check = db_query("SELECT id FROM {purl} WHERE provider = :provider AND $param = :param", array(
+    ':provider' => $modifier['provider'],
+    ':param' => $where
+  ))->fetchField();
   if ($check) {
-    $status = db_query("DELETE FROM {purl} WHERE provider = '%s' AND $param = '%s'", $modifier['provider'], $where);
+    //TODO change this to the new db_delete() method
+    $status = db_query("DELETE FROM {purl} WHERE provider = :provider AND $param = :param", array(':provider' => $modifier['provider'], ':param' => $where));
     purl_load(NULL, TRUE);
     purl_modifiers(NULL, TRUE);
     return $status;
@@ -616,14 +617,14 @@ function purl_goto($path = '', $options = array(), $http_response_code = 302) {
   $options = !is_array($options) ? array() : $options;
   $options['absolute'] = TRUE;
 
-  if (isset($_REQUEST['destination'])) {
-    extract(parse_url(urldecode($_REQUEST['destination'])));
+  if (isset($_GET['destination'])) {
+    extract(parse_url(urldecode($_GET['destination'])));
   }
   else if (isset($_REQUEST['edit']['destination'])) {
     extract(parse_url(urldecode($_REQUEST['edit']['destination'])));
   }
 
-  $url = url($path, $options);
+  $url = url($path, array($options));
 
   // purl_goto() EJECTOR:
   //
@@ -632,7 +633,7 @@ function purl_goto($path = '', $options = array(), $http_response_code = 302) {
   // can detect this by comparing the current URL with a rewritten URL. If they
   // are identical, we are entering a loop.
   if (isset($options['purl'])) {
-    $current_url = url($_GET['q'], array('absolute' => TRUE, 'query' => drupal_query_string_encode($_GET, array('q'))));
+    $current_url = url($_GET['q'], array('absolute' => TRUE, 'query' => drupal_http_build_query(drupal_get_query_parameters())));
     if ($url == $current_url) {
       watchdog('purl', 'Infinite redirect prevented.', array(), WATCHDOG_INFO);
       return;
@@ -652,7 +653,7 @@ function purl_goto($path = '', $options = array(), $http_response_code = 302) {
   // need all session data written to the database before redirecting.
   session_write_close();
 
-  header('Location: '. $url, TRUE, $http_response_code);
+  header('Location: ' . $url, TRUE, $http_response_code);
 
   // The "Location" header sends a redirect status code to the HTTP daemon. In
   // some cases this can be wrong, so we make sure none of the code below the
@@ -680,7 +681,7 @@ function purl_disable($set = FALSE) {
  * handled by the implementing submit handler.
  */
 function purl_form($provider, $id, $value = '', $required = TRUE) {
-  $method = variable_get('purl_method_'. $provider, 'path');
+  $method = variable_get('purl_method_' . $provider, 'path');
   $processor = purl_get_processor($method);
 
   $form = array(
@@ -699,7 +700,7 @@ function purl_form($provider, $id, $value = '', $required = TRUE) {
     '#maxlength' => 255,
     '#required' => $required,
     '#default_value' => $value,
-    '#field_prefix' => $method == 'path' ? $base_url .'/' : NULL,
+    '#field_prefix' => $method == 'path' ? $base_url . '/' : NULL,
   );
   $form['provider'] = array(
     '#type' => 'value',
@@ -777,8 +778,8 @@ function purl_active() {
 }
 
 /**
-* Specialized cache for storing modifier information.
-*/
+ * Specialized cache for storing modifier information.
+ */
 class purl_cache {
 
   protected $cache = array();
@@ -945,7 +946,7 @@ class purl_path_element {
 }
 
 /**
- * Implementation of hook_purl_processor().
+ * Implements hook_purl_processor().
  */
 function purl_purl_processor() {
   $info = array();
@@ -953,7 +954,7 @@ function purl_purl_processor() {
     'handler' => array(
       'class' => 'purl_processor',
       'file' => 'purl_processor.inc',
-      'path' => drupal_get_path('module', 'purl') .'/includes',
+      'path' => drupal_get_path('module', 'purl') . '/includes',
     ),
   );
   $info['path'] = array(
@@ -961,7 +962,7 @@ function purl_purl_processor() {
     'handler' => array(
       'class' => 'purl_path',
       'file' => 'purl_path.inc',
-      'path' => drupal_get_path('module', 'purl') .'/includes',
+      'path' => drupal_get_path('module', 'purl') . '/includes',
       'parent' => 'processor',
     ),
   );
@@ -971,7 +972,7 @@ function purl_purl_processor() {
     'handler' => array(
       'class' => 'purl_pair',
       'file' => 'purl_pair.inc',
-      'path' => drupal_get_path('module', 'purl') .'/includes',
+      'path' => drupal_get_path('module', 'purl') . '/includes',
       'parent' => 'path',
     ),
   );
@@ -980,7 +981,7 @@ function purl_purl_processor() {
     'handler' => array(
       'class' => 'purl_subdomain',
       'file' => 'purl_subdomain.inc',
-      'path' => drupal_get_path('module', 'purl') .'/includes',
+      'path' => drupal_get_path('module', 'purl') . '/includes',
       'parent' => 'processor',
     ),
   );
@@ -989,7 +990,7 @@ function purl_purl_processor() {
     'handler' => array(
       'class' => 'purl_domain',
       'file' => 'purl_domain.inc',
-      'path' => drupal_get_path('module', 'purl') .'/includes',
+      'path' => drupal_get_path('module', 'purl') . '/includes',
       'parent' => 'processor',
     ),
   );
@@ -998,7 +999,7 @@ function purl_purl_processor() {
     'handler' => array(
       'class' => 'purl_extension',
       'file' => 'purl_extension.inc',
-      'path' => drupal_get_path('module', 'purl') .'/includes',
+      'path' => drupal_get_path('module', 'purl') . '/includes',
       'parent' => 'processor',
     ),
   );
@@ -1007,7 +1008,7 @@ function purl_purl_processor() {
     'handler' => array(
       'class' => 'purl_useragent',
       'file' => 'purl_useragent.inc',
-      'path' => drupal_get_path('module', 'purl') .'/includes',
+      'path' => drupal_get_path('module', 'purl') . '/includes',
       'parent' => 'processor',
     ),
   );
@@ -1017,7 +1018,7 @@ function purl_purl_processor() {
     'handler' => array(
       'class' => 'purl_querystring',
       'file' => 'purl_querystring.inc',
-      'path' => drupal_get_path('module', 'purl') .'/includes',
+      'path' => drupal_get_path('module', 'purl') . '/includes',
       'parent' => 'processor',
     ),
   );

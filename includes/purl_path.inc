@@ -77,7 +77,7 @@ class purl_path implements purl_processor {
 
     // We attempt to remove the prefix from the path as a way to detect it's
     // presence. If the processor can remove itself than we're on a path alias
-    // that contains our prefix. Then $alt will not be the same as the $path 
+    // that contains our prefix. Then $alt will not be the same as the $path
     // and we won't do any rewriting.
     $alt = $this->remove($path, $element);
 
