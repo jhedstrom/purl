@@ -518,19 +518,16 @@ function purl_load($modifiers, $reset = FALSE) {
         $provider = $modifier['provider'];
         $val = $modifier[$key];
         if (!isset($cache[$key][$provider][$val])) {
-          // TODO Make sure fetchAllAssoc() is getting what we want
-          $loaded = db_query("SELECT * FROM {purl} WHERE {$key} = :val AND provider = :provider",array(
-            ':val' => $val,
-            ':provider' => $provider
-          ))->fetchAllAssoc();
+          $query = db_select('purl', 'p');
+          $loaded = $query->fields('p')
+                      ->condition($key, $val)
+                      ->condition('provider', $provider)
+                      ->execute()
+                      ->fetchAssoc();
           $cache[$key][$provider][$val] = $loaded;
         }
         return $cache[$key][$provider][$val];
       }
-    }
-    $node_additions = FALSE;
-    foreach ($node_additions as $property => &$value) {
-      $modifier->$property = $value;
     }
   }
 }
@@ -545,13 +542,13 @@ function purl_validate($modifier) {
       ':value' => $modifier['value']
     ))->fetchField();
     if (!$id) {
-      return true;
+      return TRUE;
     }
     else if (isset($modifier['id']) && ($id == $modifier['id'])) {
-      return true;
+      return TRUE;
     }
   }
-  return false;
+  return FALSE;
 }
 
 /**
@@ -624,7 +621,7 @@ function purl_goto($path = '', $options = array(), $http_response_code = 302) {
     extract(parse_url(urldecode($_REQUEST['edit']['destination'])));
   }
 
-  $url = url($path, array($options));
+  $url = url($path, $options);
 
   // purl_goto() EJECTOR:
   //
