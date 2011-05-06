@@ -10,19 +10,10 @@
  * Implements hook_install().
  */
 function purl_install() {
-  // TODO The drupal_(un)install_schema functions are called automatically in D7.
-  // drupal_install_schema('purl')
-  // TODO Please review the conversion of this statement to the D7 database API syntax.
-  /* db_query("UPDATE {system} SET weight = -20 WHERE name = 'purl'") */
   db_update('system')
-  ->fields(array(
-    'weight' => -20,
-  ))
-  ->condition('name', 'purl')
-  ->execute();
-
-  // We're definitely not upgrading from 5.x
-  //_purl_migrate();
+    ->fields(array('weight' => -20,))
+    ->condition('name', 'purl')
+    ->execute();
 }
 
 /**
