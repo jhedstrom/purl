@@ -297,7 +297,7 @@ function purl_url_outbound_alter(&$path, &$options, $original) {
   if (!purl_disable() && !$options['alias'] && !strpos($path, '://')) {
     $elements = array();
 
-    if (!isset($global_elements)) {
+    if (purl_inited() && !isset($global_elements)) {
       $global_elements = array();
       // Retrieve the path values for the current page that were
       // "stripped out" and write them back into url paths.
@@ -308,7 +308,7 @@ function purl_url_outbound_alter(&$path, &$options, $original) {
         }
       }
     }
-    $elements = $global_elements;
+    $elements = isset($global_elements) ? $global_elements : array();
 
     // The current url has requested a specific PURL modifier add it.
     if (!empty($options['purl']['provider']) && !empty($options['purl']['id'])) {
