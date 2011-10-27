@@ -630,7 +630,7 @@ function purl_goto($path = '', $options = array(), $http_response_code = 302) {
   // can detect this by comparing the current URL with a rewritten URL. If they
   // are identical, we are entering a loop.
   if (isset($options['purl'])) {
-    $current_url = url($_GET['q'], array('absolute' => TRUE, 'query' => drupal_http_build_query(drupal_get_query_parameters())));
+    $current_url = url($_GET['q'], array('absolute' => TRUE, 'query' => drupal_get_query_parameters()));
     if ($url == $current_url) {
       watchdog('purl', 'Infinite redirect prevented.', array(), WATCHDOG_INFO);
       return;
