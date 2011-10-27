@@ -232,6 +232,48 @@ function _purl_form_alter(&$form, &$form_state, $form_id) {
     $form['#validate'][] = 'purl_item_edit_validate';
     $form['#submit'][] = 'purl_item_edit_submit';
   }
+  elseif ($form_id == 'redirect_edit_form') {
+    // are these the options we wanted??
+    $options = $form['redirect_options']['#value'];
+    $form['purl'] = array(
+      '#tree' => true,
+      '#type' => 'fieldset',
+      '#title' => t('Persistent URL'),
+      '#weight' => -1,
+    );
+    // Fetch all modifiers.
+    $modifiers = array('' => t('<none>'));
+    $methods = _purl_options();
+    foreach (array_keys($methods) as $method) {
+      foreach (purl_modifiers($method) as $value => $info) {
+        $modifiers[$info['provider'] . ':' . $info['id']] = $value;
+      }
+    }
+    asort($modifiers);
+    $form['purl']['modifier'] = array(
+      '#type' => 'select',
+      '#options' => $modifiers,
+      '#title' => t('Modifier'),
+      '#description' => t('Enter a Persistent URL modifier to be used with this path.'),
+      '#default_value' => (isset($options['purl']['add'][0])) ? $options['purl']['add'][0]['provider'] . ':' . $options['purl']['add'][0]['id'] : '',
+    );
+    $form['#validate'][] = 'purl_redirect_edit_validate';
+  }
+}
+
+/**
+ * Submit handler for menu_edit_menu
+ */
+function purl_redirect_edit_validate($form, &$form_state) {
+  if ($form_state['values']['purl']['disabled'] == 0 && $form_state['values']['purl']['modifier']) {
+    $purl_settings = explode(':', $form_state['values']['purl']['modifier']);
+    $form_state['values']['redirect_options'] = array(
+      'purl' => array('add' => array(array('provider' => $purl_settings[0], 'id' => $purl_settings[1]))),
+    );
+  }
+  else {
+    $form_state['values']['redirect_options'] = array();
+  }
 }
 
 // Submit handler for menu_edit_menu
