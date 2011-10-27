@@ -288,17 +288,17 @@ function _purl_menu_edit_submit_recurse($tree, $behavior) {
  * menu_edit_item_submit() expects it.
  */
 function purl_item_edit_validate($form, &$form_state) {
-  $form_state['values']['menu']['options']['purl'] = array();
+  $form_state['values']['options']['purl'] = array();
   if (!empty($form_state['values']['purl']['modifier'])) {
     list($provider, $id) = explode(':', $form_state['values']['purl']['modifier']);
-    $form_state['values']['menu']['options']['purl']['provider'] = $provider;
-    $form_state['values']['menu']['options']['purl']['id'] = $id;
+    $form_state['values']['options']['purl']['provider'] = $provider;
+    $form_state['values']['options']['purl']['id'] = $id;
   }
   if (!empty($form_state['values']['purl']['disabled'])) {
-    $form_state['values']['menu']['options']['purl']['disabled'] = 1;
+    $form_state['values']['options']['purl']['disabled'] = 1;
   }
-  if (empty($form_state['values']['menu']['options']['purl'])) {
-    unset($form_state['values']['menu']['options']['purl']);
+  if (empty($form_state['values']['options']['purl'])) {
+    unset($form_state['values']['options']['purl']);
   }
 }
 
@@ -308,5 +308,5 @@ function purl_item_edit_validate($form, &$form_state) {
  * @see http://drupal.org/node/1354
  */
 function purl_item_edit_submit($form, &$form_state) {
-  menu_cache_clear($form_state['values']['menu']['menu_name']);
+  menu_cache_clear($form_state['values']['menu_name']);
 }
