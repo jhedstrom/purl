@@ -380,22 +380,29 @@ function purl_generate_rewrite_elements($item) {
  *
  * @param $requested_method
  *   A string identifier of a purl type/method
+ * @param $reset
+ *   TRUE to delete static and persistent modifier caches.
  * @return
  *   Array of modifiers
  */
 function purl_modifiers($requested_method = NULL, $reset = FALSE) {
   static $values;
 
-  if (!isset($values) && !$reset) {
-    $cache = cache_get('purl_modifiers');
-    if ($cache) {
-      $values = $cache->data;
+  if (!isset($values) || $reset) {
+    $values = array();
+    if ($reset) {
+      cache_clear_all('purl_modifiers:', 'cache', TRUE);
     }
   }
 
-  if (!isset($values) || $reset) {
-    $values = array();
+  if (isset($requested_method) && !isset($values[$requested_method]) && !$reset) {
+    $cache = cache_get("purl_modifiers:$requested_method");
+    if ($cache) {
+      $values[$requested_method] = $cache->data;
+    }
+  }
 
+  if (!isset($values[$requested_method]) || $reset) {
     // Invoke purl_modifiers() and gather all values
     // provided "in code" (or stored by their respective modules)
     $providers = module_invoke_all('purl_modifiers');
@@ -459,7 +466,9 @@ function purl_modifiers($requested_method = NULL, $reset = FALSE) {
         $values[$method] = $values[$method] + $db_values[$provider];
       }
     }
-    cache_set('purl_modifiers', $values);
+    if (isset($requested_method) && isset($values[$requested_method])) {
+      cache_set("purl_modifiers:$requested_method", $values[$requested_method]);
+    }
   }
 
   return (isset($values[$requested_method]) ? $values[$requested_method] : array());
