@@ -89,11 +89,3 @@ function purl_update_6002() {
   return t('Enabled CTools successfully.');
 }
 
-/**
- * Add index on provider and id columns
- */
-function purl_update_6003() {
-  $ret = array();
-  db_add_index($ret, 'purl', 'provider_id', array('provider', 'id'));
-  return $ret;
-}
