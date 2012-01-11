@@ -79,10 +79,7 @@ class purl_querystring implements purl_processor {
    */
   public function rewrite(&$path, &$options, $element) {
     if (!_purl_skip($element, $options)) {
-      $qs = array();
-      parse_str($options['query'], $qs);
-      $qs[$element->value] = $element->id;
-      $options['query'] = drupal_query_string_encode($qs);
+      $options['query'][$element->value] = $element->id;
     }
   }
 }
