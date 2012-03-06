@@ -82,9 +82,7 @@ class purl_path implements purl_processor {
     $alt = $this->remove($path, $element);
 
     if ($alt == $path && !_purl_skip($element, $options)) {
-      $items = (empty($path) ? array() : explode('/', $path));
-      array_unshift($items, $element->value);
-      $path = implode('/', $items);
+      $options['prefix'] = $element->value . '/' . $options['prefix'];
     }
   }
 }

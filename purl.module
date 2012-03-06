@@ -97,6 +97,7 @@ function purl_form_alter(&$form, &$form_state, $form_id) {
   switch ($form_id) {
     case 'menu_edit_menu':
     case 'menu_edit_item':
+    case 'redirect_edit_form':
       module_load_include('inc', 'purl', 'purl.admin');
       _purl_form_alter($form, $form_state, $form_id);
       break;
@@ -297,7 +298,7 @@ function purl_url_outbound_alter(&$path, &$options, $original) {
   if (!purl_disable() && !$options['alias'] && !strpos($path, '://')) {
     $elements = array();
 
-    if (!isset($global_elements)) {
+    if (purl_inited() && !isset($global_elements)) {
       $global_elements = array();
       // Retrieve the path values for the current page that were
       // "stripped out" and write them back into url paths.
@@ -308,7 +309,7 @@ function purl_url_outbound_alter(&$path, &$options, $original) {
         }
       }
     }
-    $elements = $global_elements;
+    $elements = isset($global_elements) ? $global_elements : array();
 
     // The current url has requested a specific PURL modifier add it.
     if (!empty($options['purl']['provider']) && !empty($options['purl']['id'])) {
@@ -387,11 +388,12 @@ function purl_generate_rewrite_elements($item) {
  */
 function purl_modifiers($requested_method = NULL, $reset = FALSE) {
   static $values;
+  global $language;
 
-  if (!isset($values) || $reset) {
-    $values = array();
-    if ($reset) {
-      cache_clear_all('purl_modifiers:', 'cache', TRUE);
+  if (!isset($values) && !$reset) {
+    $cache = cache_get('purl_modifiers_' . $language->language);
+    if ($cache) {
+      $values = $cache->data;
     }
   }
 
@@ -466,9 +468,7 @@ function purl_modifiers($requested_method = NULL, $reset = FALSE) {
         $values[$method] = $values[$method] + $db_values[$provider];
       }
     }
-    if (isset($requested_method) && isset($values[$requested_method])) {
-      cache_set("purl_modifiers:$requested_method", $values[$requested_method]);
-    }
+    cache_set('purl_modifiers_' . $language->language, $values);
   }
 
   return (isset($values[$requested_method]) ? $values[$requested_method] : array());
@@ -638,7 +638,7 @@ function purl_goto($path = '', $options = array(), $http_response_code = 302) {
   // can detect this by comparing the current URL with a rewritten URL. If they
   // are identical, we are entering a loop.
   if (isset($options['purl'])) {
-    $current_url = url($_GET['q'], array('absolute' => TRUE, 'query' => drupal_http_build_query(drupal_get_query_parameters())));
+    $current_url = url($_GET['q'], array('absolute' => TRUE, 'query' => drupal_get_query_parameters()));
     if ($url == $current_url) {
       watchdog('purl', 'Infinite redirect prevented.', array(), WATCHDOG_INFO);
       return;
