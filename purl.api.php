@@ -52,10 +52,12 @@ function hook_purl_modifiers() {
 function hook_purl_processor() {
   $plugins = array();
   $plugins['cookie'] = array(
+    'title' => t('Title as shown in UI'),
     'handler' => array(
       'path' => drupal_get_path('module', 'foo') . '/plugins',
       'file' => 'purl_cookie.inc',
       'class' => 'purl_cookie',
+      'parent' => 'processor',
     ),
   );
   return $plugins;
