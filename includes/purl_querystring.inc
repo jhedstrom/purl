@@ -70,8 +70,8 @@ class purl_querystring implements purl_processor {
   function remove($value, $element) {
     $qs = array();
     parse_str($value, $qs);
-    unset($qs[$element->id]);
-    return drupal_query_string_encode($qs);
+    unset($qs[$element->value]);
+    return drupal_http_build_query($qs);
   }
 
   /**
