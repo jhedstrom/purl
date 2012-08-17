@@ -295,7 +295,7 @@ function purl_url_outbound_alter(&$path, &$options, $original) {
 
   // Check to see whether url rewriting has been disabled or isn't
   // suitable for this path.
-  if (!purl_disable() && !$options['alias'] && !strpos($path, '://')) {
+  if (!purl_disable() && empty($options['alias']) && !strpos($path, '://')) {
     $elements = array();
 
     if (purl_inited() && !isset($global_elements)) {
