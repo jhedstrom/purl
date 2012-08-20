@@ -123,9 +123,6 @@ function purl_init() {
     if (!isset($_GET['q'])) {
       $_GET['q'] = '';
     }
-    if (!isset($_REQUEST['q'])) {
-      $_REQUEST['q'] = '';
-    }
 
     // Initialize the PURL path modification stack.
     purl_inited(TRUE);
