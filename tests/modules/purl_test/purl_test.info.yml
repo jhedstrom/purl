@@ -1,0 +1,6 @@
+core: 8.x
+dependencies: "purl"
+description: "Test module for PURL testing."
+name:  "Persistent URL tests"
+package: Testing
+type: module

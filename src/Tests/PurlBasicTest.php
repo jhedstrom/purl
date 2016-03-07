@@ -1,99 +1,36 @@
 <?php
+/**
+ * @file
+ * Contains \Drupal\purl\Tests\PurlBasicTest.
+ */
 
-class PURLPathAliasTest extends DrupalWebTestCase {
-  /**
-   * Test info.
-   */
-  public static function getInfo() {
-    return array(
-      'name' => t('Path alias'),
-      'description' => t('Path alias tests for PURL.'),
-      'group' => t('PURL'),
-    );
-  }
+namespace Drupal\purl\Tests;
 
-  /**
-   * Set up test.
-   */
-  public function setUp() {
-    parent::setUp(
-      'ctools',
-      'locale',
-      'path',
-      'purl',
-      'purl_test'
-    );
-    $admin_user = $this->drupalCreateUser(array('create page content', 'create url aliases', 'administer languages', 'administer site configuration'));
-    $this->drupalLogin($admin_user);
-
-    // Set up Spanish as second language.
-    $this->drupalPost('admin/config/regional/language/add', array('langcode' => 'es'), t('Add language'));
-
-    // Enable URL language detection and selection.
-    $edit = array('language[enabled][locale-url]' => '1');
-    $this->drupalPost('admin/config/regional/language/configure', $edit, t('Save settings'));
-
-    // Add a node with path alias.
-    $this->drupalPost('node/add/page', array('title' => 'purlTest', 'path[alias]' => 'purlTest'), t('Save'));
-  }
-
-  /**
-   * Run test.
-   */
-  public function testPurlPathAlias() {
-    variable_set('purl_types', array(
-      'path' => 'path',
-      'pair' => 'pair',
-      'extension' => 'extension',
-      'querystring' => 'querystring'
-    ));
-    variable_set('purl_method_purl_test', 'path');
-
-    $this->drupalGet('purlTest');
-    $this->assertText('purlTest', t('Node page found.'));
-
-    $this->drupalGet('sweden/purlTest');
-    $this->assertText('purlTest', t('Node page found.'));
-
-    // This will not pass. The behavior in Drupal core is to ignore path
-    // aliases that are not registered under the current language.
-    // $this->drupalGet('es/sweden/purlTest');
-    // $this->assertText('purlTest', t('Node page found.'));
-  }
-}
+use Drupal\simpletest\WebTestBase;
 
 /**
  * Basic tests for PURL.
+ *
+ * @group purl
  */
-class PURLBasicTest extends DrupalWebTestCase {
+class PurlBasicTest extends WebTestBase {
+
   /**
-   * Test info.
+   * {@inheritdoc}
    */
-  public static function getInfo() {
-    return array(
-      'name' => t('Basic'),
-      'description' => t('Basic tests for PURL.'),
-      'group' => t('PURL'),
-    );
-  }
+  public static $modules = ['purl', 'purl_test', 'node'];
 
   /**
    * Set up test.
    */
   public function setUp() {
-    parent::setUp(
-      'ctools',
-      'locale',
-      'purl',
-      'purl_test'
-    );
+    parent::setUp();
     $admin_user = $this->drupalCreateUser(array('create page content', 'create url aliases', 'administer languages', 'administer site configuration'));
-    //$admin_user = $this->drupalCreateUser(array('administer blocks', 'administer languages', 'translate interface', 'access administration pages'));
     $this->drupalLogin($admin_user);
 
     // Set up Spanish as second language.
     $this->drupalPost('admin/config/regional/language/add', array('langcode' => 'es'), t('Add language'));
-    
+
     // Enable URL language detection and selection.
     $edit = array('language[enabled][locale-url]' => '1');
     $this->drupalPost('admin/config/regional/language/configure', $edit, t('Save settings'));
