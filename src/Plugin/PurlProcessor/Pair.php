@@ -11,14 +11,11 @@ namespace Drupal\purl\Plugin\PurlProcessor;
  *
  * @PurlProcessor(
  *   id = "pair",
- *   label = "Path pair prefix"
+ *   label = "Path pair prefix",
+ *   description = "Choose a path. May contain only lowercase letters, numbers, dashes and underscores. e.g. 'my-value'"
  * )
  */
 class Pair extends Path {
-
-  public function method() {
-    return 'pair';
-  }
 
   public function admin_form(&$form, $id) {
     // Note that while this form element's key includes the method ("pair"),

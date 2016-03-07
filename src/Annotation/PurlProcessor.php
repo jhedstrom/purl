@@ -35,4 +35,13 @@ class PurlProcessor extends Plugin {
    */
   public $label;
 
+  /**
+   * The description for the user when filling out the form.
+   *
+   * @var \Drupal\Core\Annotation\Translation
+   *
+   * @ingroup plugin_translatable
+   */
+  public $description;
+
 }

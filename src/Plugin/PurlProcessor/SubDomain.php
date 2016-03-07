@@ -11,7 +11,8 @@ namespace Drupal\purl\Plugin\PurlProcessor;
  *
  * @PurlProcessor(
  *   id = "subdomain",
- *   label =" Sub-domain"
+ *   label = "Sub-domain",
+ *   description = "Enter a sub-domain for this context, such as 'mygroup'.  Do not include 'http://'."
  * )
  */
 class SubDomain extends Base implements PurlProcessorInterface {
@@ -38,14 +39,6 @@ $form['purl_location']['purl_base_domain'] = array(
   function detect($q) {
     $parts = explode('.', str_replace('http://', '', $_SERVER['HTTP_HOST']));
     return count($parts) > 1 ? array_shift($parts) : NULL;
-  }
-
-  public function method() {
-    return 'subdomain';
-  }
-
-  public function description() {
-    return t('Enter a sub-domain for this context, such as "mygroup".  Do not include http://');
   }
 
   public function parse($valid_values, $q) {

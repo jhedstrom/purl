@@ -11,7 +11,8 @@ namespace Drupal\purl\Plugin\PurlProcessor;
  *
  * @PurlProcessor(
  *   id = "extension",
- *   label = "File extension such as '.csv'"
+ *   label = "File extension"
+ *   description = "Enter a extension for this context, such as 'csv'."
  * )
  */
 class Extension extends Base implements PurlProcessorInterface {
@@ -24,14 +25,6 @@ class Extension extends Base implements PurlProcessorInterface {
       return array_pop($last);
     }
     return '';
-  }
-
-  public function method() {
-    return 'extension';
-  }
-
-  public function description() {
-    return t('Enter a extension for this context, such as "csv".');
   }
 
   public function parse($valid_values, $q) {

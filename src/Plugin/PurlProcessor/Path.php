@@ -16,10 +16,6 @@ namespace Drupal\purl\Plugin\PurlProcessor;
  */
 class Path extends Base implements PurlProcessorInterface {
 
-  public function method() {
-    return 'path';
-  }
-
   public function admin_form(&$form, $id) { }
 
   /**
@@ -27,10 +23,6 @@ class Path extends Base implements PurlProcessorInterface {
    */
   public function detect($q) {
     return $q;
-  }
-
-  public function description() {
-    return t('Choose a path. May contain only lowercase letters, numbers, dashes and underscores. e.g. "my-value"');
   }
 
   /**

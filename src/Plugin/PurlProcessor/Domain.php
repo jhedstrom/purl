@@ -11,7 +11,8 @@ namespace Drupal\purl\Plugin\PurlProcessor;
  *
  * @PurlProcessor(
  *   id = "domain",
- *   label = "Full domain handling"
+ *   label = "Full domain handling",
+ *   description = "Enter a domain registered for this context, such as "www.example.com".  Do not include http://"
  * )
  */
 class Domain extends Base implements PurlProcessorInterface {
@@ -37,14 +38,6 @@ $form['purl_location']['purl_base_domain'] = array(
 
   function detect($q) {
     return str_replace('http://', '', $_SERVER['HTTP_HOST']);
-  }
-
-  public function method() {
-    return 'domain';
-  }
-
-  public function description() {
-    return t('Enter a domain registered for this context, such as "www.example.com".  Do not include http://');
   }
 
   /**

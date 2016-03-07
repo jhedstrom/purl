@@ -11,14 +11,11 @@ namespace Drupal\purl\Plugin\PurlProcessor;
  *
  * @PurlProcessor(
  *   id = "querystring",
- *   label = "Query string"
+ *   label = "Query string",
+ *   description = "Choose a query string. May contain only lowercase letters, numbers, dashes and underscores. e.g. 'my-value'."
  * )
  */
 class QueryString extends Base implements PurlProcessorInterface {
-
-  public function method() {
-    return 'querystring';
-  }
 
   public function admin_form(&$form, $id) {
     // Note that while this form element's key includes the method ("pair"),
@@ -46,10 +43,6 @@ class QueryString extends Base implements PurlProcessorInterface {
   public function detect($q) {
     return drupal_http_build_query(\Drupal\Component\Utility\UrlHelper::filterQueryParameters($_GET, array('q', 'sort', 'order', 'page', 'pass')));
     //return drupal_query_string_encode($_GET, array('q', 'sort', 'order', 'page', 'pass'));
-  }
-
-  public function description() {
-    return t('Choose a querystring. May contain only lowercase letters, numbers, dashes and underscores. e.g. "my-value"');
   }
 
   /**

@@ -14,23 +14,9 @@ use Drupal\Component\Plugin\PluginInspectionInterface;
 interface PurlProcessorInterface extends PluginInspectionInterface {
 
   /**
-   * Return the method the processor users.
-   *
-   * @return string, machine name of the method.
-   */
-  public function method();
-
-  /**
    * Allow extension of the admin setup form.
    */
   public function admin_form(&$form, $id);
-
-  /**
-   * Provide a description of processor for the end user
-   *
-   * @return string description.
-   */
-  public function description();
 
   /**
    * Detect the the processor value for the current page request

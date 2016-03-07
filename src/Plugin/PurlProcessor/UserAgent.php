@@ -11,20 +11,13 @@ namespace Drupal\purl\Plugin\PurlProcessor;
  *
  * @PurlProcessor(
  *   id = "user_agent",
- *   label = "User agent"
+ *   label = "User agent",
+ *   description = "Enter a user agent for this context, such as 'iPhone'."
  * )
  */
 class UserAgent extends Base implements PurlProcessorInterface {
 
-  public function method() {
-    return 'useragent';
-  }
-
   public function admin_form(&$form, $id) { }
-
-  public function description() {
-    return t('Enter a user agent for this context, such as "iPhone".');
-  }
 
   public function detect($q) {
     $useragent = $_SERVER['HTTP_USER_AGENT'];
