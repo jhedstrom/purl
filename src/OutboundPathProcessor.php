@@ -6,12 +6,18 @@
 namespace Drupal\purl;
 
 use Drupal\Core\PathProcessor\OutboundPathProcessorInterface;
-
+use Drupal\Core\Render\BubbleableMetadata;
 use Symfony\Component\HttpFoundation\Request;
 
+/**
+ * Process outbound paths on behalf of the PURL module.
+ */
 class OutboundPathProcessor implements OutboundPathProcessorInterface {
 
-  public function processOutbound(&$path, &$options, $original) {
+  /**
+   * {@inheritdoc}
+   */
+  public function processOutbound($path, &$options = [], Request $request = NULL, BubbleableMetadata $bubbleable_metadata = NULL) {
     static $global_elements;
 
     // Check to see whether url rewriting has been disabled or isn't
