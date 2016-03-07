@@ -1,38 +1,45 @@
 <?php
+namespace Drupal\purl;
 
 /**
- * Subdomain prefixing.
+ *  Full domain handling.
  */
-class purl_subdomain implements purl_processor {
+class purl_domain implements purl_processor {
 
   public function admin_form(&$form, $id) {
     global $base_url;
     $form['purl_location'] = array(
       '#type' => 'fieldset',
     );
-    $form['purl_location']['purl_base_domain'] = array(
+    // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/purl.settings.yml and config/schema/purl.schema.yml.
+$form['purl_location']['purl_base_domain'] = array(
       '#type' => 'textfield',
       '#title' => t('Default domain'),
       '#description' => t('Enter the default domain if you are using domain modifiers.'),
       '#required' => FALSE,
-      '#default_value' => variable_get('purl_base_domain', $base_url),
+      '#default_value' => \Drupal::config('purl.settings')->get('purl_base_domain'),
       '#element_validate' => array('purl_validate_fqdn'),
     );
   }
 
   function detect($q) {
-    $parts = explode('.', str_replace('http://', '', $_SERVER['HTTP_HOST']));
-    return count($parts) > 1 ? array_shift($parts) : NULL;
+    return str_replace('http://', '', $_SERVER['HTTP_HOST']);
   }
 
   public function method() {
-    return 'subdomain';
+    return 'domain';
   }
 
   public function description() {
-    return t('Enter a sub-domain for this context, such as "mygroup".  Do not include http://');
+    return t('Enter a domain registered for this context, such as "www.example.com".  Do not include http://');
   }
 
+  /**
+   * Simply match our 'q' (aka domain) against an allowed value.
+   */
   public function parse($valid_values, $q) {
     $parsed = array();
     if (isset($valid_values[$q])) {
@@ -50,9 +57,8 @@ class purl_subdomain implements purl_processor {
     if ($base_url = $this->base_url()) {
       if (!_purl_skip($element, $options)) {
         $base = parse_url($base_url);
-        $port = (!empty($base['port'])) ? ':' . $base['port'] : "";
         $base_path = (!empty($base['path'])) ? $base['path'] : "";
-        $options['base_url'] = "{$base['scheme']}://{$element->value}.{$base['host']}{$port}{$base_path}";
+        $options['base_url'] = "{$base['scheme']}://{$element->value}{$base_path}";
       }
       else {
         $options['base_url'] = $base_url;
@@ -62,7 +68,11 @@ class purl_subdomain implements purl_processor {
 
   protected function base_url() {
     global $base_url;
-    $base = variable_get('purl_base_domain', $base_url);
+    // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/purl.settings.yml and config/schema/purl.schema.yml.
+$base = \Drupal::config('purl.settings')->get('purl_base_domain');
     return !empty($base) ? $base : $base_url;
   }
 }

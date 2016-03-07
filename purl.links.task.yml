@@ -1,0 +1,15 @@
+purl.settings_form:
+  route_name: purl.settings_form
+  title: Settings
+  weight: 1
+  base_route: purl.settings_form
+purl.admin:
+  route_name: purl.admin
+  title: Modifiers
+  weight: 2
+  base_route: purl.settings_form
+purl.types_form:
+  route_name: purl.types_form
+  title: Types
+  weight: 3
+  base_route: purl.settings_form

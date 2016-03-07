@@ -93,7 +93,7 @@ function purl_menu() {
 /**
  * Implements hook_form_alter().
  */
-function purl_form_alter(&$form, &$form_state, $form_id) {
+function purl_form_alter(&$form, \Drupal\Core\Form\FormStateInterface &$form_state, $form_id) {
   switch ($form_id) {
     case 'menu_edit_menu':
     case 'menu_edit_item':
@@ -146,7 +146,12 @@ function purl_init() {
 */
 function purl_language_strip($path) {
   // Configured presentation language mode.
-  $mode = variable_get('language_negotiation', LANGUAGE_NEGOTIATION_NONE);
+  // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// $mode = variable_get('language_negotiation', LANGUAGE_NEGOTIATION_NONE);
+
 
   // Get a list of enabled languages.
   $languages = language_list('enabled');
@@ -232,7 +237,12 @@ function purl_get_normal_path($q, $activate = FALSE, $reset = FALSE) {
   // If at the end of all this the adjusted query string is empty, use the
   // site frontpage.
   if (!empty($q)) {
-    return !empty($adjusted[$q]) ? $adjusted[$q] : variable_get('site_frontpage', 'node');
+    // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// return !empty($adjusted[$q]) ? $adjusted[$q] : variable_get('site_frontpage', 'node');
+
   }
   // If the actual requested string was empty, we need to leave it alone.
   return $adjusted[$q];
@@ -337,7 +347,12 @@ function purl_url_outbound_alter(&$path, &$options, $original) {
  * @return a purl_path_element object.
  */
 function purl_generate_rewrite_elements($item) {
-  $method = variable_get('purl_method_' . $item['provider'], 'path');
+  // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $method = variable_get('purl_method_' . $item['provider'], 'path');
+
 
   $processor = purl_get_processor($method);
   $local_modifiers = purl_modifiers($method);
@@ -385,17 +400,17 @@ function purl_generate_rewrite_elements($item) {
  */
 function purl_modifiers($requested_method = NULL, $reset = FALSE) {
   static $values;
-  global $language;
+  $language = \Drupal::languageManager()->getCurrentLanguage();
 
   if (!isset($values) && !$reset) {
-    $cache = cache_get('purl_modifiers_' . $language->language);
+    $cache = \Drupal::cache()->get('purl_modifiers_' . $language->language);
     if ($cache) {
       $values = $cache->data;
     }
   }
 
   if (isset($requested_method) && !isset($values[$requested_method]) && !$reset) {
-    $cache = cache_get("purl_modifiers:$requested_method");
+    $cache = \Drupal::cache()->get("purl_modifiers:$requested_method");
     if ($cache) {
       $values[$requested_method] = $cache->data;
     }
@@ -404,15 +419,25 @@ function purl_modifiers($requested_method = NULL, $reset = FALSE) {
   if (!isset($values[$requested_method]) || $reset) {
     // Invoke purl_modifiers() and gather all values
     // provided "in code" (or stored by their respective modules)
-    $providers = module_invoke_all('purl_modifiers');
+    $providers = \Drupal::moduleHandler()->invokeAll('purl_modifiers');
 
     foreach ($providers as $provider => $items) {
       // Store providers for use when retrieving db values
-      $method = variable_get('purl_method_' . $provider, 'path');
+      // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $method = variable_get('purl_method_' . $provider, 'path');
+
       // If using a value pair we don't need to cache the valid values.
-      $info = ctools_get_plugins('purl', 'processor', $method);
+      $info = \Drupal::service('plugin.manager.purl.processor')->getDefinitions();
       if (!empty($info['null_id'])) {
-        $value = variable_get('purl_method_' . $provider . '_key', false);
+        // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $value = variable_get('purl_method_' . $provider . '_key', false);
+
         if ($value != false) {
           $values[$method][$value] = array(
             'provider' => $provider,
@@ -447,11 +472,21 @@ function purl_modifiers($requested_method = NULL, $reset = FALSE) {
     }
 
     foreach ($providers as $provider => $info) {
-      $method = variable_get('purl_method_' . $provider, 'path');
-      $info = ctools_get_plugins('purl', 'processor', $method);
+      // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $method = variable_get('purl_method_' . $provider, 'path');
+
+      $info = \Drupal::service('plugin.manager.purl.processor')->getDefinitions();
       // Don't load all data base values for keyed pairs.
       if (!empty($info['null_id'])) {
-        $value = variable_get('purl_method_' . $provider . '_key', false);
+        // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $value = variable_get('purl_method_' . $provider . '_key', false);
+
         if ($value != false) {
           $values[$method][$value] = array(
             'provider' => $provider,
@@ -465,7 +500,7 @@ function purl_modifiers($requested_method = NULL, $reset = FALSE) {
         $values[$method] = $values[$method] + $db_values[$provider];
       }
     }
-    cache_set('purl_modifiers_' . $language->language, $values);
+    \Drupal::cache()->set('purl_modifiers_' . $language->language, $values);
   }
 
   return (isset($values[$requested_method]) ? $values[$requested_method] : array());
@@ -488,7 +523,7 @@ function purl_providers($by_method = FALSE) {
   static $providers;
   if (!is_array($providers)) {
     $providers = array();
-    $providers = module_invoke_all('purl_provider');
+    $providers = \Drupal::moduleHandler()->invokeAll('purl_provider');
   }
   if ($by_method) {
     static $methods;
@@ -496,7 +531,12 @@ function purl_providers($by_method = FALSE) {
       $methods = new purl_cache();
 
       foreach ($providers as $id => $provider) {
-        $methods->add(variable_get('purl_method_' . $id, 'path'), array($id => $provider));
+        // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $methods->add(variable_get('purl_method_' . $id, 'path'), array($id => $provider));
+
       }
     }
     return $methods->get();
@@ -542,17 +582,24 @@ function purl_load($modifier, $reset = FALSE) {
  */
 function purl_validate($modifier) {
   // Check that the value is valid
-  if (check_plain($modifier['provider']) && !empty($modifier['value']) && preg_match('!^[\.a-z0-9_-]+$!', $modifier['value']) && !menu_get_item($modifier['value'])) {
-    $id = db_query("SELECT id FROM {purl} WHERE value = :value", array(
-      ':value' => $modifier['value']
-    ))->fetchField();
-    if (!$id) {
-      return TRUE;
-    }
-    else if (isset($modifier['id']) && ($id == $modifier['id'])) {
-      return TRUE;
-    }
-  }
+  // @FIXME
+// menu_get_item() has been removed. To retrieve route information, use the
+// RouteMatch object, which you can retrieve by calling \Drupal::routeMatch().
+// 
+// 
+// @see https://www.drupal.org/node/2203305
+// if (check_plain($modifier['provider']) && !empty($modifier['value']) && preg_match('!^[\.a-z0-9_-]+$!', $modifier['value']) && !menu_get_item($modifier['value'])) {
+//     $id = db_query("SELECT id FROM {purl} WHERE value = :value", array(
+//       ':value' => $modifier['value']
+//     ))->fetchField();
+//     if (!$id) {
+//       return TRUE;
+//     }
+//     else if (isset($modifier['id']) && ($id == $modifier['id'])) {
+//       return TRUE;
+//     }
+//   }
+
   return FALSE;
 }
 
@@ -566,10 +613,10 @@ function purl_save($modifier) {
       ':provider' => $modifier['provider']
     ))->fetchField();
     if (!empty($id)) {
-      $status = drupal_write_record('purl', $modifier, array('provider', 'id'));
+      $status = \Drupal::database()->merge('purl')->fields($modifier)->key(array('provider', 'id'))->execute();
     }
     else {
-      $status = drupal_write_record('purl', $modifier);
+      $status = \Drupal::database()->insert('purl')->fields($modifier)->execute();
     }
     purl_load(NULL, TRUE);
     purl_modifiers(NULL, TRUE);
@@ -626,7 +673,10 @@ function purl_goto($path = '', $options = array(), $http_response_code = 302) {
     extract(parse_url(urldecode($_REQUEST['edit']['destination'])));
   }
 
-  $url = url($path, $options);
+  // @FIXME
+// url() expects a route name or an external URI.
+// $url = url($path, $options);
+
 
   // purl_goto() EJECTOR:
   //
@@ -635,9 +685,12 @@ function purl_goto($path = '', $options = array(), $http_response_code = 302) {
   // can detect this by comparing the current URL with a rewritten URL. If they
   // are identical, we are entering a loop.
   if (isset($options['purl'])) {
-    $current_url = url($_GET['q'], array('absolute' => TRUE, 'query' => drupal_get_query_parameters()));
+    // @FIXME
+// url() expects a route name or an external URI.
+// $current_url = url($_GET['q'], array('absolute' => TRUE, 'query' => drupal_get_query_parameters()));
+
     if ($url == $current_url) {
-      watchdog('purl', 'Infinite redirect prevented.', array(), WATCHDOG_INFO);
+      \Drupal::logger('purl')->info('Infinite redirect prevented.', array());
       return;
     }
   }
@@ -648,7 +701,7 @@ function purl_goto($path = '', $options = array(), $http_response_code = 302) {
   // Allow modules to react to the end of the page request before redirecting.
   // We do not want this while running update.php.
   if (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update') {
-    module_invoke_all('exit', $url);
+    \Drupal::moduleHandler()->invokeAll('exit', [$url]);
   }
 
   // Even though session_write_close() is registered as a shutdown function, we
@@ -683,7 +736,12 @@ function purl_disable($set = FALSE) {
  * handled by the implementing submit handler.
  */
 function purl_form($provider, $id, $value = '', $required = TRUE) {
-  $method = variable_get('purl_method_' . $provider, 'path');
+  // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $method = variable_get('purl_method_' . $provider, 'path');
+
   $processor = purl_get_processor($method);
 
   $form = array(
@@ -753,16 +811,25 @@ function _purl_options($active = TRUE) {
 
   // @see http://drupal.org/node/573646#comment-2589772 & http://drupal.org/node/923724.
   module_load_include('module', 'ctools', 'ctools');
-  ctools_include('plugins');
+  // @FIXME
+// Most CTools APIs have been moved into core.
+// 
+// @see https://www.drupal.org/node/2164623
+// ctools_include('plugins');
+
   $options = array();
-  foreach (ctools_get_plugins('purl', 'processor') as $key => $processor) {
+  foreach (\Drupal::service('plugin.manager.purl.processor')->getDefinitions() as $key => $processor) {
     if (!empty($processor['title'])) {
       $options[$key] = $processor['title'];
     }
   }
 
   if ($active) {
-    $enabled = variable_get('purl_types', array('path' => 'path'));
+    // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/purl.settings.yml and config/schema/purl.schema.yml.
+$enabled = \Drupal::config('purl.settings')->get('purl_types');
     $options = array_intersect_key($options, array_filter($enabled));
   }
   return $options;
@@ -890,7 +957,12 @@ class purl_cache {
 function purl_get_processor($method) {
   static $processors;
   if (!isset($processors[$method])) {
-    ctools_include('plugins');
+    // @FIXME
+// Most CTools APIs have been moved into core.
+// 
+// @see https://www.drupal.org/node/2164623
+// ctools_include('plugins');
+
     $class = ctools_plugin_load_class('purl', 'processor', $method, 'handler');
     $processors[$method] = new $class();
   }

@@ -1,0 +1,24 @@
+services:
+  plugin.manager.purl.processor:
+    class: Drupal\Core\Plugin\DefaultPluginManager
+    arguments:
+      - Plugin/purl/processor
+      - '@container.namespaces'
+      - '@module_handler'
+      - Drupal\Component\Plugin\PluginBase
+      - Drupal\Component\Annotation\Plugin
+  boot_subscriber:
+    class: Drupal\purl\EventSubscriber\BootSubscriber
+    tags:
+      -
+        name: event_subscriber
+  init_subscriber:
+    class: Drupal\purl\EventSubscriber\InitSubscriber
+    tags:
+      -
+        name: event_subscriber
+  outbound_path_processor:
+    class: Drupal\purl\OutboundPathProcessor
+    tags:
+      -
+        name: path_processor_outbound

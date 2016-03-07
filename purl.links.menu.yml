@@ -1,0 +1,5 @@
+purl.settings_form:
+  route_name: purl.settings_form
+  title: 'Persistent URL'
+  weight: -5
+  description: 'Settings for persistent url.'

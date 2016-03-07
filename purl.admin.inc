@@ -30,12 +30,17 @@ function purl_admin() {
 
   $rows = array();
   for ($i = $page * $limit; $i < ($page + 1) * $limit && $i < count($merged); $i++) {
-    $rows[] = array(
-      $providers[$merged[$i]['provider']]['name'],
-      $merged[$i]['value'],
-      $merged[$i]['id'],
-      $methods[variable_get('purl_method_' . $merged[$i]['provider'], 'path')],
-    );
+    // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $rows[] = array(
+//       $providers[$merged[$i]['provider']]['name'],
+//       $merged[$i]['value'],
+//       $merged[$i]['id'],
+//       $methods[variable_get('purl_method_' . $merged[$i]['provider'], 'path')],
+//     );
+
   }
 
   // We calculate the total of pages as ceil(items / limit).
@@ -44,8 +49,26 @@ function purl_admin() {
   $pager_page_array[$element] = max(0, min((int) $pager_page_array[$element], ((int) $pager_total[$element]) - 1));
 
   if ($rows) {
-    $output = theme('table', array('header' => array(t('Provider'), t('Modifier'), t('ID'), t('Method')), 'rows' => $rows));
-    $output .= theme('pager');
+    // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $output = theme('table', array('header' => array(t('Provider'), t('Modifier'), t('ID'), t('Method')), 'rows' => $rows));
+
+    // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $output .= theme('pager');
+
   }
   else {
     $output = "<p>" . t('No persistent urls have been registered.') . "</p>";
@@ -78,12 +101,17 @@ function purl_settings_form($form, &$form_state) {
       '#title' => $provider['name'],
       '#description' => $provider['description'],
     );
-    $form[$id]['purl_method_' . $id] = array(
-      '#title' => t('Method'),
-      '#type' => 'select',
-      '#options' => $provider_options,
-      '#default_value' => variable_get('purl_method_' . $id, 'path'),
-    );
+    // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $form[$id]['purl_method_' . $id] = array(
+//       '#title' => t('Method'),
+//       '#type' => 'select',
+//       '#options' => $provider_options,
+//       '#default_value' => variable_get('purl_method_' . $id, 'path'),
+//     );
+
 
     // Allow processors to alter the form.
     foreach ($provider_options as $k => $v) {
@@ -128,7 +156,7 @@ function theme_purl_settings_form($variables) {
   $form = $variables['form'];
   $output = '';
   $rows = array();
-  foreach (element_children($form) as $id) {
+  foreach (\Drupal\Core\Render\Element::children($form) as $id) {
     $row = array();
     if (isset($form[$id]['#provider'])) {
       $name = $form[$id]['#title'];
@@ -138,21 +166,38 @@ function theme_purl_settings_form($variables) {
       $row[] = "<strong>$name</strong><div class='description'>$description</div>";
 
       $cell = $extra = '';
-      foreach (element_children($form[$id]) as $item) {
+      foreach (\Drupal\Core\Render\Element::children($form[$id]) as $item) {
         unset($form[$id][$item]['#title']);
         if ($item == 'extra') {
-          $extra = drupal_render($form[$id][$item]);
+          $extra = \Drupal::service("renderer")->render($form[$id][$item]);
         }
-        $cell .= drupal_render($form[$id][$item]);
+        $cell .= \Drupal::service("renderer")->render($form[$id][$item]);
       }
       $row[] = $cell;
       $row[] = $extra;
     }
     $rows[] = $row;
   }
-  $output .= theme('table', array('header' => array(t('Provider'), t('Modifier type'), t('Settings')), 'rows' => $rows));
+  // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $output .= theme('table', array('header' => array(t('Provider'), t('Modifier type'), t('Settings')), 'rows' => $rows));
+
   $output .= drupal_render_children($form);
-  drupal_add_js(drupal_get_path("module", "purl") . "/purl.admin.js");
+  // @FIXME
+// The Assets API has totally changed. CSS, JavaScript, and libraries are now
+// attached directly to render arrays using the #attached property.
+// 
+// 
+// @see https://www.drupal.org/node/2169605
+// @see https://www.drupal.org/node/2408597
+// drupal_add_js(drupal_get_path("module", "purl") . "/purl.admin.js");
+
   return $output;
 }
 
@@ -161,11 +206,15 @@ function theme_purl_settings_form($variables) {
  */
 function purl_types_form($form, &$form_state) {
   $form = array();
-  $form['purl_types'] = array(
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/purl.settings.yml and config/schema/purl.schema.yml.
+$form['purl_types'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Types'),
     '#options' => _purl_options(false),
-    '#default_value' => variable_get('purl_types', array()),
+    '#default_value' => \Drupal::config('purl.settings')->get('purl_types'),
     '#description' => t('Enabled URL modification types.'),
   );
   return system_settings_form($form);
@@ -184,12 +233,17 @@ function _purl_form_alter(&$form, &$form_state, $form_id) {
         '#title' => t('Persistent URL behavior'),
         '#description' => t('All links are normally rewritten to contain the active persistent url elements. You may set all items in this menu to maintain existing modifications (the default), or to discard them.'),
       );
-      $form['purl']['rewrite'] = array(
-        '#type' => 'select',
-        '#options' => array('enabled' => t("Maintain"), 'disabled' => ("Discard")),
-        '#title' => t('Behavior'),
-        '#default_value' => variable_get('purl_menu_behavior_' . $form['menu_name']['#default_value'], 'enabled'),
-      );
+      // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $form['purl']['rewrite'] = array(
+//         '#type' => 'select',
+//         '#options' => array('enabled' => t("Maintain"), 'disabled' => ("Discard")),
+//         '#title' => t('Behavior'),
+//         '#default_value' => variable_get('purl_menu_behavior_' . $form['menu_name']['#default_value'], 'enabled'),
+//       );
+
       $form['purl']['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Submit'),
@@ -283,17 +337,35 @@ function purl_redirect_edit_validate($form, &$form_state) {
  */
 function purl_menu_edit_submit($form, &$form_state) {
   $menu = $form_state['values'];
-  $tree = menu_tree_all_data($menu['menu_name']);
+  // @FIXME
+// menu_tree_all_data() is gone in Drupal 8. To generate or work with menu trees, you'll need to
+// use the menu.link_tree service.
+// 
+// 
+// @see https://www.drupal.org/node/2226481
+// @see https://api.drupal.org/api/drupal/core%21lib%21Drupal%21Core%21Menu%21MenuLinkTree.php/class/MenuLinkTree/8
+// $tree = menu_tree_all_data($menu['menu_name']);
+
 
   // Recurse through all items and set each.
   _purl_menu_edit_submit_recurse($tree, $menu['purl']['rewrite']);
   menu_cache_clear($menu['menu_name']);
 
   if ($menu['purl']['rewrite'] == 'disabled') {
-    variable_set('purl_menu_behavior_' . $menu['menu_name'], 'disabled');
+    // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// variable_set('purl_menu_behavior_' . $menu['menu_name'], 'disabled');
+
   }
   else {
-    variable_del('purl_menu_behavior_' . $menu['menu_name']);
+    // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// variable_del('purl_menu_behavior_' . $menu['menu_name']);
+
   }
 }
 

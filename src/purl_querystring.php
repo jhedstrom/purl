@@ -1,4 +1,5 @@
 <?php
+namespace Drupal\purl;
 
 /**
  * Querystring processor.
@@ -13,14 +14,19 @@ class purl_querystring implements purl_processor {
     // Note that while this form element's key includes the method ("pair"),
     // it will eventually save to the variable purl_method_[id]_key. See
     // element validator for how this occurs.
-    $form[$id]['extra']["purl_method_querystring_{$id}_key"] = array(
-      '#title' => t('Key'),
-      '#type' => 'textfield',
-      '#size' => 12,
-      '#default_value' => variable_get("purl_method_{$id}_key", ''),
-      '#element_validate' => array('purl_admin_form_key_validate'),
-      '#provider_id' => $id,
-    );
+    // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $form[$id]['extra']["purl_method_querystring_{$id}_key"] = array(
+//       '#title' => t('Key'),
+//       '#type' => 'textfield',
+//       '#size' => 12,
+//       '#default_value' => variable_get("purl_method_{$id}_key", ''),
+//       '#element_validate' => array('purl_admin_form_key_validate'),
+//       '#provider_id' => $id,
+//     );
+
   }
 
   /**
@@ -28,7 +34,7 @@ class purl_querystring implements purl_processor {
    * already.
    */
   public function detect($q) {
-    return drupal_http_build_query(drupal_get_query_parameters($_GET, array('q', 'sort', 'order', 'page', 'pass')));
+    return drupal_http_build_query(\Drupal\Component\Utility\UrlHelper::filterQueryParameters($_GET, array('q', 'sort', 'order', 'page', 'pass')));
     //return drupal_query_string_encode($_GET, array('q', 'sort', 'order', 'page', 'pass'));
   }
 

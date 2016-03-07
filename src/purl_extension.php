@@ -1,4 +1,5 @@
 <?php
+namespace Drupal\purl;
 
 /**
  * File extension style. Like ".csv"

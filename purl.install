@@ -10,10 +10,12 @@
  * Implements hook_install().
  */
 function purl_install() {
-  db_update('system')
-    ->fields(array('weight' => -20,))
-    ->condition('name', 'purl')
-    ->execute();
+  // @FIXME
+// db_update('system')
+//     ->fields(array('weight' => -20,))
+//     ->condition('name', 'purl')
+//     ->execute();
+
 }
 
 /**
@@ -21,7 +23,7 @@ function purl_install() {
  */
 function purl_uninstall() {
   // should we delete this variable here??
-  variable_del('purl_method_pair_key');
+  \Drupal::config('purl.settings')->clear('purl_method_pair_key')->save();
 }
 
 /**
@@ -70,9 +72,9 @@ function purl_schema() {
  * "purl_method_path_key", update that to "purl_method_pair_key".
  */
 function purl_update_6001() {
-  if ($pair = variable_get('purl_method_path_key', FALSE)) {
-    variable_set('purl_method_pair_key', $pair);
-    variable_del('purl_method_path_key');
+  if ($pair = \Drupal::config('purl.settings')->get('purl_method_path_key')) {
+    \Drupal::configFactory()->getEditable('purl.settings')->set('purl_method_pair_key', $pair)->save();
+    \Drupal::config('purl.settings')->clear('purl_method_path_key')->save();
   }
   return;
 }

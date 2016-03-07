@@ -1,4 +1,5 @@
 <?php
+namespace Drupal\purl;
 
 /**
  * Pair pair prefixer.
@@ -13,14 +14,19 @@ class purl_pair extends purl_path {
     // Note that while this form element's key includes the method ("pair"),
     // it will eventually save to the variable purl_method_[id]_key. See
     // element validator for how this occurs.
-    $form[$id]['extra']["purl_method_pair_{$id}_key"] = array(// todo write update from path to pair
-      '#title' => t('Key'),
-      '#type' => 'textfield',
-      '#size' => 12,
-      '#default_value' => variable_get("purl_method_{$id}_key", ''),
-      '#element_validate' => array('purl_admin_form_key_validate'),
-      '#provider_id' => $id,
-    );
+    // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $form[$id]['extra']["purl_method_pair_{$id}_key"] = array(// todo write update from path to pair
+//       '#title' => t('Key'),
+//       '#type' => 'textfield',
+//       '#size' => 12,
+//       '#default_value' => variable_get("purl_method_{$id}_key", ''),
+//       '#element_validate' => array('purl_admin_form_key_validate'),
+//       '#provider_id' => $id,
+//     );
+
   }
 
   public function parse($valid_values, $q) {
@@ -63,5 +69,3 @@ class purl_pair extends purl_path {
     }
   }
 }
-
-

@@ -1,0 +1,21 @@
+purl.settings_form:
+  path: /admin/config/search/purl/settings
+  defaults:
+    _title: Settings
+    _form: \Drupal\purl\Form\PurlSettingsForm
+  requirements:
+    _permission: 'administer site configuration'
+purl.admin:
+  path: /admin/config/search/purl/list
+  defaults:
+    _title: Modifiers
+    _controller: '\Drupal\purl\Controller\DefaultController::purl_admin'
+  requirements:
+    _permission: 'administer site configuration'
+purl.types_form:
+  path: /admin/config/search/purl/types
+  defaults:
+    _title: Types
+    _form: \Drupal\purl\Form\PurlTypesForm
+  requirements:
+    _permission: 'administer site configuration'
