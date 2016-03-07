@@ -1,10 +1,20 @@
 <?php
-namespace Drupal\purl;
+/**
+ * @file
+ * Contains \Drupal\purl\Plugin\PurlProcessor\Pair.
+ */
+
+namespace Drupal\purl\Plugin\PurlProcessor;
 
 /**
- * Pair pair prefixer.
+ * Path pair prefixer.
+ *
+ * @PurlProcessor(
+ *   id = "pair",
+ *   label = "Path pair prefix"
+ * )
  */
-class purl_pair extends purl_path {
+class Pair extends Path {
 
   public function method() {
     return 'pair';

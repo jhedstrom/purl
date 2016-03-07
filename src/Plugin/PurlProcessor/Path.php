@@ -1,10 +1,20 @@
 <?php
-namespace Drupal\purl;
+/**
+ * @file
+ * Contains \Drupal\purl\Plugin\PurlProcessor\Path.
+ */
+
+namespace Drupal\purl\Plugin\PurlProcessor;
 
 /**
  * Path prefixer.
+ *
+ * @PurlProcessor(
+ *   id = "path",
+ *   label = "Path prefix"
+ * )
  */
-class purl_path implements purl_processor {
+class Path extends Base implements PurlProcessorInterface {
 
   public function method() {
     return 'path';

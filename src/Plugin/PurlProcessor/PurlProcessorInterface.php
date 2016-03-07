@@ -1,9 +1,17 @@
 <?php
+/**
+ * @file
+ * Contains \Drupal\purl\Plugin\PurlProcessor\PurlProcessorInterface.
+ */
+
+namespace Drupal\purl\Plugin\PurlProcessor;
+
+use Drupal\Component\Plugin\PluginInspectionInterface;
 
 /**
- * Processors can inspect and manipulate various parts of a request's URI.
+ * Defines an interface for PurlProcessor plugins.
  */
-interface purl_processor {
+interface PurlProcessorInterface extends PluginInspectionInterface {
 
   /**
    * Return the method the processor users.
@@ -71,5 +79,5 @@ interface purl_processor {
    *   The element to add to the path.
    */
   public function rewrite(&$path, &$options, $element);
-}
 
+}

@@ -19,33 +19,6 @@ function purl_theme($existing, $type, $theme, $path) {
 }
 
 /**
- * Implements hook_ctools_plugin_api().
- */
-function purl_ctools_plugin_api($owner, $api) {
-  if ($owner == 'purl' && $api == 'processor') {
-    return array(
-      'version' => 1,
-      'path' => 'includes',
-    );
-  }
-}
-
-/**
- * Implements hook_ctools_plugin_type().
- */
-
-
-function purl_ctools_plugin_type() {
-  $plugins = array(
-    'processor' => array(
-      'cache' => TRUE,
-      'use hooks' => TRUE
-    )
-  );
-  return $plugins;
-}
-
-/**
  * Implements hook_menu().
  */
 function purl_menu() {

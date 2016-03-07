@@ -1,10 +1,21 @@
 <?php
-namespace Drupal\purl;
+/**
+ * @file
+ * Contains \Drupal\purl\Plugin\PurlProcessor\UserAgent.
+ */
+
+namespace Drupal\purl\Plugin\PurlProcessor;
 
 /**
  * User agent style.
+ *
+ * @PurlProcessor(
+ *   id = "user_agent",
+ *   label = "User agent"
+ * )
  */
-class purl_useragent implements purl_processor {
+class UserAgent extends Base implements PurlProcessorInterface {
+
   public function method() {
     return 'useragent';
   }

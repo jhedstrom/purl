@@ -1,10 +1,20 @@
 <?php
-namespace Drupal\purl;
+/**
+ * @file
+ * Contains \Drupal\purl\Plugin\PurlProcessor\QueryString.
+ */
+
+namespace Drupal\purl\Plugin\PurlProcessor;
 
 /**
  * Querystring processor.
+ *
+ * @PurlProcessor(
+ *   id = "querystring",
+ *   label = "Query string"
+ * )
  */
-class purl_querystring implements purl_processor {
+class QueryString extends Base implements PurlProcessorInterface {
 
   public function method() {
     return 'querystring';

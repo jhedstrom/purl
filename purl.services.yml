@@ -22,3 +22,6 @@ services:
     tags:
       -
         name: path_processor_outbound
+  plugin.purl_processor.manager:
+    class: Drupal\purl\ProcessorManager
+    parent: default_plugin_manager

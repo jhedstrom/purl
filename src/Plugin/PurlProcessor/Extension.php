@@ -1,10 +1,20 @@
 <?php
-namespace Drupal\purl;
+/**
+ * @file
+ * Contains \Drupal\purl\Plugin\PurlProcessor\Extension.
+ */
+
+namespace Drupal\purl\Plugin\PurlProcessor;
 
 /**
- * File extension style. Like ".csv"
+ * File extension style. Like ".csv".
+ *
+ * @PurlProcessor(
+ *   id = "extension",
+ *   label = "File extension such as '.csv'"
+ * )
  */
-class purl_extension implements purl_processor {
+class Extension extends Base implements PurlProcessorInterface {
 
   public function admin_form(&$form, $id) { }
 

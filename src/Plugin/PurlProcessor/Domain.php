@@ -1,10 +1,20 @@
 <?php
-namespace Drupal\purl;
+/**
+ * @file
+ * Contains \Drupal\purl\Plugin\PurlProcessor\Domain.
+ */
+
+namespace Drupal\purl\Plugin\PurlProcessor;
 
 /**
- * Subdomain prefixing.
+ *  Full domain handling.
+ *
+ * @PurlProcessor(
+ *   id = "domain",
+ *   label = "Full domain handling"
+ * )
  */
-class purl_subdomain implements purl_processor {
+class Domain extends Base implements PurlProcessorInterface {
 
   public function admin_form(&$form, $id) {
     global $base_url;
@@ -26,18 +36,20 @@ $form['purl_location']['purl_base_domain'] = array(
   }
 
   function detect($q) {
-    $parts = explode('.', str_replace('http://', '', $_SERVER['HTTP_HOST']));
-    return count($parts) > 1 ? array_shift($parts) : NULL;
+    return str_replace('http://', '', $_SERVER['HTTP_HOST']);
   }
 
   public function method() {
-    return 'subdomain';
+    return 'domain';
   }
 
   public function description() {
-    return t('Enter a sub-domain for this context, such as "mygroup".  Do not include http://');
+    return t('Enter a domain registered for this context, such as "www.example.com".  Do not include http://');
   }
 
+  /**
+   * Simply match our 'q' (aka domain) against an allowed value.
+   */
   public function parse($valid_values, $q) {
     $parsed = array();
     if (isset($valid_values[$q])) {
@@ -55,9 +67,8 @@ $form['purl_location']['purl_base_domain'] = array(
     if ($base_url = $this->base_url()) {
       if (!_purl_skip($element, $options)) {
         $base = parse_url($base_url);
-        $port = (!empty($base['port'])) ? ':' . $base['port'] : "";
         $base_path = (!empty($base['path'])) ? $base['path'] : "";
-        $options['base_url'] = "{$base['scheme']}://{$element->value}.{$base['host']}{$port}{$base_path}";
+        $options['base_url'] = "{$base['scheme']}://{$element->value}{$base_path}";
       }
       else {
         $options['base_url'] = $base_url;
