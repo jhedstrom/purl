@@ -1,6 +1,0 @@
-purl.settings:
-  type: mapping
-  label: Settings
-  mapping:
-    purl_method_path_key:
-      type: boolean
